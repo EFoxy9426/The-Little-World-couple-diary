@@ -23,23 +23,52 @@
   function loadMap() { try { return JSON.parse(localStorage.getItem(uploadMapKey()) || '{}'); } catch (e) { return {}; } }
   function saveMap(m) { try { localStorage.setItem(uploadMapKey(), JSON.stringify(m)); } catch (e) {} }
 
+  function fail(msg, backToLogin) {
+    console.error('[小小世界] ' + msg);
+    try {
+      var box = document.getElementById('xxBootError');
+      if (!box) {
+        box = document.createElement('div');
+        box.id = 'xxBootError';
+        box.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#fffef5;color:#2c2c2c;padding:24px;font-family:sans-serif;line-height:1.8;overflow:auto';
+        var t = document.createElement('h3');
+        t.textContent = '进入空间失败';
+        var p1 = document.createElement('p');
+        p1.id = 'xxBootErrorMsg';
+        p1.style.cssText = 'color:#ff6b6b;font-weight:700;word-break:break-all';
+        var tip = document.createElement('p');
+        tip.textContent = '把上面这行错误信息发给开发者即可定位；也可以先返回登录页重试。';
+        var link = document.createElement('a');
+        link.href = '/cloud/index.html';
+        link.textContent = '← 返回登录页';
+        link.style.cssText = 'display:inline-block;margin-top:12px;padding:8px 16px;border:2px dashed #2c2c2c;border-radius:8px;text-decoration:none;color:#2c2c2c';
+        box.appendChild(t); box.appendChild(p1); box.appendChild(tip); box.appendChild(link);
+        document.body.appendChild(box);
+      }
+      var m = document.getElementById('xxBootErrorMsg');
+      if (m) m.textContent = msg;
+    } catch (e2) {}
+    if (backToLogin) setTimeout(function () { window.location.href = '/cloud/index.html'; }, 3000);
+  }
+
   function boot(cb) {
     bootCbs.push(cb);
     if (booted) { notifyBoot(); return; }
-    if (!cfg || !window.supabase || !window.supabase.createClient) { window.location.href = '/cloud/index.html'; return; }
-    try { sb = window.supabase.createClient(cfg.url, cfg.anonKey); } catch (e) { window.location.href = '/cloud/index.html'; return; }
+    if (!cfg) { fail('缺少云端配置 /cloud/config.js（没加载到 SUPABASE_CONFIG）', false); return; }
+    if (!window.supabase || !window.supabase.createClient) { fail('缺少本地 Supabase 库 /js/vendor/supabase.js（没加载到）', false); return; }
+    try { sb = window.supabase.createClient(cfg.url, cfg.anonKey); } catch (e) { fail('创建 Supabase 客户端失败：' + e.message, false); return; }
     sb.auth.getSession().then(function (r) {
       var s = r && r.data && r.data.session;
-      if (!s || !s.user) { window.location.href = '/cloud/index.html'; return; }
+      if (!s || !s.user) { fail('未检测到登录状态，3 秒后返回登录页…', true); return; }
       sb.rpc('my_space').then(function (sr) {
-        if (sr.error || !sr.data) { window.location.href = '/cloud/index.html'; return; }
+        if (sr.error || !sr.data) { fail('读取空间失败：' + (sr.error && sr.error.message ? sr.error.message : '没有找到你的空间'), false); return; }
         var sp = sr.data;
         var myId = String(s.user.id);
         var isOwner = String(sp.owner_id) === myId;
         me = { id: myId, email: s.user.email, role: isOwner ? 'bro' : 'sis' };
         space = { id: sp.id, name: sp.name || '小小世界', owner_id: sp.owner_id };
         sb.from('spaces').select('id,data').eq('id', sp.id).maybeSingle().then(function (dr) {
-          if (dr.error) { window.location.href = '/cloud/index.html'; return; }
+          if (dr.error) { fail('读取空间数据失败：' + dr.error.message, false); return; }
           var raw = (dr.data && dr.data.data) || null;
           if (raw && typeof raw === 'object' && raw.couple) state = normalize(raw);
           else { state = makeDefault(); persist(); }
