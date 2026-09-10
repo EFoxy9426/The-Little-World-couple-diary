@@ -274,7 +274,11 @@
 
     var status = $('dashStatus');
     if (members.length >= 2) {
-      status.textContent = '🎉 已完成绑定：你们俩都在这里了，点下面按钮进入你们的空间。';
+      status.textContent = '🎉 已完成绑定，正在进入你们的空间…（如没自动跳转，点下面按钮）';
+      if (!window.__xxAutoEntered) {
+        window.__xxAutoEntered = true;
+        setTimeout(function () { window.location.href = '/cloud/app.html'; }, 1200);
+      }
     } else if (isOwner) {
       status.textContent = '⏳ 已创建「' + (space.name || '小小世界') + '」，正在等另一半用邀请码加入…（也可以先点下面按钮进去写点内容）';
     } else {
