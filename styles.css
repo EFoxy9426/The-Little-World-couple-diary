@@ -629,3 +629,16 @@ select.input{cursor:pointer}
 .photo-menu-btn:active{transform:translate(1px,1px)}
 .photo-menu-btn.cancel{color:var(--muted);font-weight:400}
 .ph-actions{display:none}
+
+
+/* photo-touch-guard：PWA 里禁用系统长按菜单与图片拖拽 */
+.photos .ph img,
+.photo-thumb img,
+.wish-photos .ph img{
+  -webkit-touch-callout:none;
+  -webkit-user-select:none;
+  user-select:none;
+  -webkit-user-drag:none;
+  touch-action:manipulation;
+}
+.photo-menu-btn, .photo-menu{ touch-action:manipulation }

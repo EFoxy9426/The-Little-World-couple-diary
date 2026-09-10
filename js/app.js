@@ -101,33 +101,49 @@
   }
 
   function bindLongPress(node, handler) {
-    var timer = null, moved = false, sx = 0, sy = 0;
+    var timer = null, moved = false, sx = 0, sy = 0, justFired = false;
+    function open() {
+      justFired = true;
+      setTimeout(function () { justFired = false; }, 600);
+      handler();
+    }
     function start(e) {
-      var t = e.touches ? e.touches[0] : e;
-      sx = t.clientX; sy = t.clientY; moved = false;
+      var cx = (e.clientX !== undefined) ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+      var cy = (e.clientY !== undefined) ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+      sx = cx; sy = cy; moved = false;
       if (timer) clearTimeout(timer);
-      timer = setTimeout(function () {
-        timer = null;
-        if (!moved) handler();
-      }, 600);
+      timer = setTimeout(function () { timer = null; if (!moved) open(); }, 550);
     }
     function move(e) {
       if (!timer) return;
-      var t = e.touches ? e.touches[0] : e;
-      if (Math.abs(t.clientX - sx) > 10 || Math.abs(t.clientY - sy) > 10) {
-        moved = true; clearTimeout(timer); timer = null;
-      }
+      var cx = (e.clientX !== undefined) ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+      var cy = (e.clientY !== undefined) ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+      if (Math.abs(cx - sx) > 10 || Math.abs(cy - sy) > 10) { moved = true; clearTimeout(timer); timer = null; }
     }
     function end() { if (timer) { clearTimeout(timer); timer = null; } }
-    node.addEventListener('touchstart', start, { passive: true });
-    node.addEventListener('touchmove', move, { passive: true });
-    node.addEventListener('touchend', end);
-    node.addEventListener('touchcancel', end);
-    node.addEventListener('mousedown', start);
-    node.addEventListener('mousemove', move);
-    node.addEventListener('mouseup', end);
-    node.addEventListener('mouseleave', end);
-    node.addEventListener('contextmenu', function (e) { e.preventDefault(); handler(); });
+    if (window.PointerEvent) {
+      node.addEventListener('pointerdown', start);
+      node.addEventListener('pointermove', move);
+      node.addEventListener('pointerup', end);
+      node.addEventListener('pointercancel', end);
+      node.addEventListener('pointerleave', end);
+    } else {
+      node.addEventListener('touchstart', start, { passive: true });
+      node.addEventListener('touchmove', move, { passive: true });
+      node.addEventListener('touchend', end);
+      node.addEventListener('touchcancel', end);
+      node.addEventListener('mousedown', start);
+      node.addEventListener('mousemove', move);
+      node.addEventListener('mouseup', end);
+      node.addEventListener('mouseleave', end);
+    }
+    node.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (justFired) return;
+      open();
+    });
+    node.addEventListener('contextmenu', function (e) { e.preventDefault(); if (!justFired) open(); });
   }
   function partner(k) { return S.couple.partners[k]; }
   function me() { return partner(current); }
@@ -455,6 +471,7 @@
           var img = el('img');
           bindImg(img, mem.photos[idx]);
           img.alt = '点滴照片';
+          img.draggable = false;
           bindLongPress(ph, function () {
             showPhotoMenu([
               { label: '🔁 替换这张照片', run: function () {
@@ -694,6 +711,7 @@
           var img = el('img');
           bindImg(img, w.photos[idx]);
           img.alt = '愿望照片';
+          img.draggable = false;
           bindLongPress(ph, function () {
             ask('删除这张照片？', '删除后无法恢复，确定吗？', true).then(function (ok) {
               if (!ok) return;
@@ -1156,7 +1174,12 @@
     $('memForm').addEventListener('submit', submitMem);
     $('memPhotoInput').addEventListener('change', onMemPhotoChange);
     var memPhotoBtn = $('memPhotoBtn');
-    if (memPhotoBtn) memPhotoBtn.addEventListener('click', function () { pickImages(true, processMemFiles); });
+    if (memPhotoBtn) {
+      memPhotoBtn.addEventListener('click', function () {
+        var mi = $('memPhotoInput');
+        if (mi) { try { mi.click(); } catch (e) { toast('请点上面的「选择文件」按钮'); } }
+      });
+    }
     $('memClearPhotos').addEventListener('click', function () { pendingPhotos = []; renderPhotoPreview(); });
     $('memCancelEdit').addEventListener('click', cancelEditMem);
     $('memDate').addEventListener('change', function () {});
