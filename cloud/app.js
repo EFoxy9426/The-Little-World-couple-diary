@@ -274,9 +274,9 @@
 
     var status = $('dashStatus');
     if (members.length >= 2) {
-      status.textContent = '🎉 已完成绑定：你们俩都在这里了。记录功能（M2）即将接入。';
+      status.textContent = '🎉 已完成绑定：你们俩都在这里了，点下面按钮进入你们的空间。';
     } else if (isOwner) {
-      status.textContent = '⏳ 已创建「' + (space.name || '小小世界') + '」，正在等另一半用邀请码加入…（每 3 秒自动刷新）';
+      status.textContent = '⏳ 已创建「' + (space.name || '小小世界') + '」，正在等另一半用邀请码加入…（也可以先点下面按钮进去写点内容）';
     } else {
       status.textContent = '🔗 你已通过邀请码加入「' + (space.name || '小小世界') + '」，正在等创建者确认。';
     }
@@ -337,6 +337,9 @@
         }
         space = null; showNone(); toast('已离开');
       }
+    });
+    $('btnEnterSpace').addEventListener('click', function () {
+      window.location.href = '/cloud/app.html';
     });
     $('btnLogout').addEventListener('click', logout);
     $('btnLogout2').addEventListener('click', logout);

@@ -28,7 +28,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>小小世界 · 云端</title>
-  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="/styles.css">
   <style>
     .cloud-card{max-width:440px;margin:0 auto}
     .mode-hint{text-align:center;font-size:12px;color:#4ecdc4;font-weight:700}
@@ -112,6 +112,9 @@
       <div class="card cloud-card">
         <h2 class="card-title"><span class="hl" id="dashName">小小世界</span></h2>
         <p class="hint" id="dashStatus"></p>
+        <div class="form-actions" style="margin:10px 0 14px">
+          <button type="button" class="btn btn-primary" id="btnEnterSpace">💞 进入我们的空间</button>
+        </div>
         <div id="ownerBlock">
           <div class="field">
             <span class="label">把邀请码发给另一半，TA 注册后输入即可加入</span>
@@ -137,8 +140,8 @@
 
   </div></main>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="../js/vendor/supabase.js"></script>
-  <script src="config.js"></script>
-  <script src="app.js"></script>
+  <script src="/js/vendor/supabase.js"></script>
+  <script src="/cloud/config.js"></script>
+  <script src="/cloud/app.js"></script>
 </body>
 </html>

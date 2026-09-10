@@ -26,20 +26,20 @@
   function boot(cb) {
     bootCbs.push(cb);
     if (booted) { notifyBoot(); return; }
-    if (!cfg || !window.supabase || !window.supabase.createClient) { window.location.href = 'index.html'; return; }
-    try { sb = window.supabase.createClient(cfg.url, cfg.anonKey); } catch (e) { window.location.href = 'index.html'; return; }
+    if (!cfg || !window.supabase || !window.supabase.createClient) { window.location.href = '/cloud/index.html'; return; }
+    try { sb = window.supabase.createClient(cfg.url, cfg.anonKey); } catch (e) { window.location.href = '/cloud/index.html'; return; }
     sb.auth.getSession().then(function (r) {
       var s = r && r.data && r.data.session;
-      if (!s || !s.user) { window.location.href = 'index.html'; return; }
+      if (!s || !s.user) { window.location.href = '/cloud/index.html'; return; }
       sb.rpc('my_space').then(function (sr) {
-        if (sr.error || !sr.data) { window.location.href = 'index.html'; return; }
+        if (sr.error || !sr.data) { window.location.href = '/cloud/index.html'; return; }
         var sp = sr.data;
         var myId = String(s.user.id);
         var isOwner = String(sp.owner_id) === myId;
         me = { id: myId, email: s.user.email, role: isOwner ? 'bro' : 'sis' };
         space = { id: sp.id, name: sp.name || '小小世界', owner_id: sp.owner_id };
         sb.from('spaces').select('id,data').eq('id', sp.id).maybeSingle().then(function (dr) {
-          if (dr.error) { window.location.href = 'index.html'; return; }
+          if (dr.error) { window.location.href = '/cloud/index.html'; return; }
           var raw = (dr.data && dr.data.data) || null;
           if (raw && typeof raw === 'object' && raw.couple) state = normalize(raw);
           else { state = makeDefault(); persist(); }
