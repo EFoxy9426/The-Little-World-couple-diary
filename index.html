@@ -1,0 +1,354 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#fffef5">
+  <title>小小世界</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">❤</span>
+        <span class="brand-name" id="brandName">小小世界</span>
+        <span class="brand-tag">我们的小小世界</span>
+      </div>
+      <div class="who" id="whoBox" aria-label="我的身份"></div>
+    </div>
+  </header>
+
+  <nav class="tabbar" role="tablist" aria-label="功能导航">
+    <button type="button" class="tab is-active" data-tab="home" role="tab" aria-selected="true">
+      <span class="tab-ico" aria-hidden="true">🏠</span><span>我们的日子</span>
+    </button>
+    <button type="button" class="tab" data-tab="timeline" role="tab" aria-selected="false">
+      <span class="tab-ico" aria-hidden="true">📖</span><span>点滴</span>
+    </button>
+    <button type="button" class="tab" data-tab="wishes" role="tab" aria-selected="false">
+      <span class="tab-ico" aria-hidden="true">🎯</span><span>愿望</span>
+    </button>
+    <button type="button" class="tab" data-tab="notes" role="tab" aria-selected="false">
+      <span class="tab-ico" aria-hidden="true">💌</span><span>悄悄话</span>
+    </button>
+    <button type="button" class="tab" data-tab="settings" role="tab" aria-selected="false">
+      <span class="tab-ico" aria-hidden="true">⚙️</span><span>设置</span>
+    </button>
+  </nav>
+
+  <main class="page">
+    <div class="container">
+
+      <section class="view is-active" data-view="home" aria-label="我们的日子">
+        <div class="card hero tilt-card">
+          <span class="tape" aria-hidden="true"></span>
+          <div class="hero-top">
+            <span class="hero-kicker">welcome to</span>
+            <h1 class="hero-title"><span class="hl">小小世界</span></h1>
+            <p class="hero-sub" id="heroWho">小弟 ❤ 大哥 的小小世界</p>
+          </div>
+          <div class="hero-day">
+            <span class="hero-day-num" id="dayNum">第 1 天</span>
+            <span class="hero-day-label">我们在一起</span>
+          </div>
+          <p class="hero-since" id="heroSince">2025.12.25 至今</p>
+          <div class="hero-cta">
+            <button type="button" class="btn btn-primary" id="btnQuickNote">✏️ 记一笔今天的小确幸</button>
+          </div>
+          <span class="deco-star star1" aria-hidden="true">✦</span>
+          <span class="deco-star star2" aria-hidden="true">✧</span>
+        </div>
+
+        <div class="stats-row">
+          <button type="button" class="stat-card" data-goto="timeline">
+            <span class="stat-num" id="statMem">0</span>
+            <span class="stat-label">点滴回忆</span>
+          </button>
+          <button type="button" class="stat-card" data-goto="wishes">
+            <span class="stat-num" id="statWish">0</span>
+            <span class="stat-label">愿望已实现</span>
+          </button>
+          <button type="button" class="stat-card" data-goto="notes">
+            <span class="stat-num" id="statNote">0</span>
+            <span class="stat-label">悄悄话</span>
+          </button>
+        </div>
+
+        <section class="block stats-block">
+          <div class="block-head">
+            <h2 class="block-title">📊 本月小结</h2>
+          </div>
+          <div class="stats-row" id="homeStats"></div>
+        </section>
+
+        <section class="block">
+          <div class="block-head">
+            <h2 class="block-title">📌 纪念日</h2>
+            <button type="button" class="linkish" data-goto="settings">去添加 ➜</button>
+          </div>
+          <div id="homeAnn" class="ann-grid"></div>
+        </section>
+      </section>
+
+      <section class="view" data-view="timeline" aria-label="点滴时光轴">
+        <div class="card compose tilt-card">
+          <h2 class="card-title"><span class="wavy">记一笔今天</span></h2>
+          <form id="memForm">
+            <div class="form-row">
+              <label class="field">
+                <span class="label">是哪一天</span>
+                <input type="date" class="input" id="memDate">
+              </label>
+              <div class="field grow">
+                <span class="label">心情</span>
+                <div class="chips" id="memMoods" role="radiogroup" aria-label="选择心情"></div>
+              </div>
+            </div>
+            <div class="field">
+              <label class="label" for="memText">发生了什么</label>
+              <textarea class="textarea" id="memText" rows="3" placeholder="今天一起做了什么？去了哪、吃了什么、说了什么悄悄话…"></textarea>
+            </div>
+            <div class="field">
+              <span class="label">照片（可选，会自动压缩保存）</span>
+              <div class="photo-bar">
+                <label class="btn btn-ghost small" for="memPhotoInput">📷 添加照片</label>
+                <input type="file" id="memPhotoInput" accept="image/*" multiple hidden>
+                <button type="button" class="btn btn-ghost small hidden" id="memClearPhotos">清空已选</button>
+              </div>
+              <div class="photo-preview" id="memPhotoPreview"></div>
+            </div>
+            <div class="form-actions">
+              <span class="hint" id="memAs">将以「小弟」的身份记录</span>
+              <span class="spacer"></span>
+              <button type="button" class="btn btn-ghost hidden" id="memCancelEdit">取消修改</button>
+              <button type="submit" class="btn btn-primary" id="memSubmit">📌 记下来</button>
+            </div>
+          </form>
+        </div>
+        <div class="block-head">
+          <h2 class="block-title">📖 时光轴</h2>
+          <span class="hint" id="memCount"></span>
+        </div>
+        <div class="mem-filter">
+          <input type="search" class="input" id="memSearch" placeholder="🔍 搜索点滴内容…" aria-label="搜索点滴">
+          <div class="chips" id="memFilterMoods" role="group" aria-label="按心情筛选点滴"></div>
+        </div>
+        <div id="memList" class="mem-list"></div>
+      </section>
+
+      <section class="view" data-view="wishes" aria-label="愿望清单">
+        <div class="card compose tilt-card">
+          <h2 class="card-title"><span class="wavy">许一个想和你一起实现的愿望</span></h2>
+          <form id="wishForm">
+            <div class="form-row">
+              <label class="field grow">
+                <span class="label">愿望内容</span>
+                <input type="text" class="input" id="wishText" maxlength="80" placeholder="比如：一起去迪士尼看烟花">
+              </label>
+              <label class="field">
+                <span class="label">分类</span>
+                <select class="input" id="wishCat">
+                  <option value="旅行">🎠 一起旅行</option>
+                  <option value="做饭">🍳 一起做饭</option>
+                  <option value="体验">🎬 一起体验</option>
+                  <option value="布置">🏠 一起布置</option>
+                  <option value="其他">🎁 其他</option>
+                </select>
+              </label>
+            </div>
+            <div class="form-row form-row-end">
+              <label class="field">
+                <span class="label">许愿日期</span>
+                <input type="date" class="input" id="wishDate">
+              </label>
+              <span class="hint grow self-end" id="wishAs"></span>
+              <button type="submit" class="btn btn-primary">🎯 许下愿望</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="block-head">
+          <h2 class="block-title">🎯 我们的愿望清单</h2>
+          <span class="hint" id="wishStat"></span>
+        </div>
+        <div class="wish-filters" role="group" aria-label="筛选愿望">
+          <button type="button" class="chip-filter is-on" data-wishfilter="all">全部</button>
+          <button type="button" class="chip-filter" data-wishfilter="open">⏳ 待实现</button>
+          <button type="button" class="chip-filter" data-wishfilter="done">✅ 已实现</button>
+          <button type="button" class="chip-filter" data-wishfilter="gaveup">💔 已放弃</button>
+        </div>
+        <div id="wishList" class="wish-list"></div>
+      </section>
+
+      <section class="view" data-view="notes" aria-label="悄悄话">
+        <div class="card compose tilt-card note-paper">
+          <h2 class="card-title"><span class="wavy">写一张小纸条</span></h2>
+          <form id="noteForm">
+            <div class="field">
+              <textarea class="textarea" id="noteText" rows="3" placeholder="有些话当面说不出口，就写在这里吧…"></textarea>
+            </div>
+            <div class="form-actions">
+              <span class="hint" id="noteAs"></span>
+              <span class="spacer"></span>
+              <span class="hint" id="noteStampNow"></span>
+              <button type="submit" class="btn btn-accent">💌 寄出去</button>
+            </div>
+          </form>
+        </div>
+        <div class="block-head">
+          <h2 class="block-title">💌 信箱</h2>
+          <span class="hint" id="noteCount"></span>
+        </div>
+        <div id="noteList" class="note-list"></div>
+      </section>
+
+      <section class="view" data-view="settings" aria-label="设置">
+        <div class="block">
+          <h2 class="block-title">⚙️ 设置</h2>
+
+          <div class="card tilt-card">
+            <h3 class="card-sub">🌍 我们的名字与日子</h3>
+            <div class="form-row">
+              <label class="field grow">
+                <span class="label">网站名字</span>
+                <input type="text" class="input" id="setName" maxlength="20">
+              </label>
+              <label class="field">
+                <span class="label">在一起的日子</span>
+                <input type="date" class="input" id="setSince">
+              </label>
+            </div>
+            <div class="form-actions">
+              <span class="spacer"></span>
+              <button type="button" class="btn btn-primary" id="btnSaveCouple">保存</button>
+            </div>
+          </div>
+
+          <div class="card tilt-card">
+            <h3 class="card-sub">🔐 我的身份（绑定后不可自由切换）</h3>
+            <p class="hint" id="bindInfo"></p>
+            <div class="btn-row">
+              <button type="button" class="btn btn-ghost" id="btnUnbind">解除绑定（仅单机原型测试用）</button>
+            </div>
+          </div>
+
+          <div class="card tilt-card">
+            <h3 class="card-sub">🐾 我们俩（头像可换成喜欢的 emoji）</h3>
+            <div class="partner-grid">
+              <div class="partner-box">
+                <span class="label">小弟（男生）</span>
+                <div class="partner-line">
+                  <span class="ava big" data-ava="bro">🐶</span>
+                  <input type="text" class="input grow" id="broName" maxlength="8">
+                </div>
+                <span class="label">点选头像</span>
+                <div class="emoji-panel" id="emojiPanel-bro" role="group" aria-label="选择小弟头像"></div>
+                <label class="label" for="broEmoji">或输入其他 emoji（可选）</label>
+                <input type="text" class="input" id="broEmoji" maxlength="4">
+              </div>
+              <div class="partner-box">
+                <span class="label">大哥（女生）</span>
+                <div class="partner-line">
+                  <span class="ava big" data-ava="sis">🐱</span>
+                  <input type="text" class="input grow" id="sisName" maxlength="8">
+                </div>
+                <span class="label">点选头像</span>
+                <div class="emoji-panel" id="emojiPanel-sis" role="group" aria-label="选择大哥头像"></div>
+                <label class="label" for="sisEmoji">或输入其他 emoji（可选）</label>
+                <input type="text" class="input" id="sisEmoji" maxlength="4">
+              </div>
+            </div>
+            <div class="form-actions">
+              <span class="spacer"></span>
+              <button type="button" class="btn btn-primary" id="btnSavePartners">保存我俩</button>
+            </div>
+          </div>
+
+          <div class="card tilt-card">
+            <h3 class="card-sub">📌 其他纪念日（在一起的纪念日已自动内置）</h3>
+            <form id="annForm" class="form-row ann-add">
+              <label class="field grow">
+                <span class="label">名字（如：大哥生日）</span>
+                <input type="text" class="input" id="annName" maxlength="20" placeholder="大哥生日">
+              </label>
+              <div class="field">
+                <span class="label">图标（点选即可换）</span>
+                <div class="emoji-panel" id="annEmojiPanel" role="group" aria-label="选择纪念日图标"></div>
+                <label class="label" for="annEmoji">或输入其他 emoji（可选）</label>
+                <input type="text" class="input" id="annEmoji" maxlength="4" value="📌">
+              </div>
+              <label class="field">
+                <span class="label">日期</span>
+                <input type="date" class="input" id="annDate">
+              </label>
+              <label class="check">
+                <input type="checkbox" id="annRepeat" checked>
+                <span>每年重复</span>
+              </label>
+              <button type="submit" class="btn btn-primary self-end">添加</button>
+            </form>
+            <ul class="ann-manage" id="annList"></ul>
+          </div>
+
+          <div class="card tilt-card">
+            <h3 class="card-sub">🗄️ 数据（本机存储，建议定期导出备份）</h3>
+            <div class="btn-row">
+              <button type="button" class="btn btn-primary" id="btnExport">⬇️ 导出备份</button>
+              <button type="button" class="btn" id="btnImport">⬆️ 导入备份</button>
+              <input type="file" id="importFile" accept=".json,application/json" hidden>
+              <button type="button" class="btn" id="btnSample">✨ 恢复示例数据</button>
+              <button type="button" class="btn btn-danger" id="btnWipe">🧹 清空记录</button>
+            </div>
+            <p class="hint" id="spaceLine"></p>
+            <p class="hint" id="lastExportLine"></p>
+            <p class="hint">备份文件是一份 .json，请存到安全的地方（网盘 / 电脑）。换浏览器或设备时用「导入备份」就能把回忆带回来。</p>
+          </div>
+
+          <div class="card tilt-card">
+            <h3 class="card-sub">📖 关于小小世界</h3>
+            <p class="hint">第一版单机原型：数据只保存在当前浏览器里，适合先体验。之后会升级成双人账号版，把回忆稳稳存到云端、手机电脑都能看。</p>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <div class="bind-overlay hidden" id="bindOverlay" role="dialog" aria-modal="true" aria-label="选择身份">
+    <div class="card bind-box">
+      <h2 class="bind-title">欢迎来到 <span class="hl">小小世界</span> ❤</h2>
+      <p class="hint bind-tip">第一次进来，先选一下你是谁。<br>绑定后，你写的内容都会以这个身份署名，之后不再自由切换（正式云版将改成账号 + 邀请码绑定）。</p>
+      <div class="bind-choices">
+        <button type="button" class="bind-choice" data-bindkey="bro">
+          <span class="ava big">🐶</span>
+          <span class="bind-name">小弟</span>
+          <span class="bind-tag">选这个 = 以「小弟」身份绑定</span>
+        </button>
+        <button type="button" class="bind-choice" data-bindkey="sis">
+          <span class="ava big">🐱</span>
+          <span class="bind-name">大哥</span>
+          <span class="bind-tag">选这个 = 以「大哥」身份绑定</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <dialog id="confirmDlg" class="dlg">
+    <form method="dialog" class="dlg-body">
+      <h3 class="dlg-title" id="dlgTitle">确定吗？</h3>
+      <p class="dlg-text" id="dlgText"></p>
+      <div class="dlg-actions">
+        <button type="button" class="btn btn-ghost" id="dlgNo" value="cancel">再想想</button>
+        <button type="button" class="btn btn-danger" id="dlgYes" value="ok">确定</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <noscript><p style="padding:20px">小小世界需要开启 JavaScript 才能使用哦。</p></noscript>
+  <script src="js/store.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

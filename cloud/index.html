@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>小小世界 · 云端</title>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    .cloud-card{max-width:440px;margin:0 auto}
+    .mode-hint{text-align:center;font-size:12px;color:#4ecdc4;font-weight:700}
+    .code-box{font-size:26px;font-weight:900;letter-spacing:4px;text-align:center;background:#fffef5;border:2px dashed #2c2c2c;border-radius:8px;padding:14px;margin:10px 0}
+    .member-row{display:flex;align-items:center;gap:10px;border:2px dashed rgba(44,44,44,.35);border-radius:8px;padding:8px 12px;margin-bottom:8px;background:#fffef5}
+    .member-role{font-size:11px;color:#2c2c2c;background:#ffd93d;border-radius:6px;padding:0 8px}
+    .auth-tabs{display:flex;gap:8px;margin-bottom:14px}
+    .auth-tab{flex:1;border:2px dashed #2c2c2c;border-radius:8px;background:#fffef5;padding:8px;cursor:pointer;font-weight:700}
+    .auth-tab.is-on{background:#2c2c2c;color:#fffef5}
+  </style>
+<link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#fffef5">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <script>
+    if ('serviceWorker' in navigator && location.protocol === 'https:') {
+      window.addEventListener('load', function () { navigator.serviceWorker.register('/sw.js'); });
+    }
+  </script>
+</head>
+<body>
+  <header class="topbar"><div class="topbar-inner">
+    <div class="brand"><span class="brand-mark">❤</span><span class="brand-name">小小世界</span><span class="brand-tag">云端版 · M1</span></div>
+  </div></header>
+  <main class="page"><div class="container">
+    <p class="mode-hint" id="modeHint">正在连接…</p>
+
+    <!-- 登录 / 注册 -->
+    <section class="view is-active" data-view="auth">
+      <div class="card cloud-card">
+        <h2 class="card-title"><span class="wavy">登录 / 注册</span></h2>
+        <div class="auth-tabs">
+          <button type="button" class="auth-tab is-on" id="tabLogin">登录</button>
+          <button type="button" class="auth-tab" id="tabRegister">注册</button>
+        </div>
+        <form id="authForm">
+          <div class="field">
+            <span class="label">邮箱</span>
+            <input type="email" class="input" id="authEmail" placeholder="you@example.com" required>
+          </div>
+          <div class="field">
+            <span class="label">密码（至少 6 位）</span>
+            <input type="password" class="input" id="authPwd" placeholder="••••••••" required minlength="6">
+          </div>
+          <div class="form-actions">
+            <span class="hint" id="authHint">首次注册后，下一步创建你们的小小世界</span>
+            <span class="spacer"></span>
+            <button type="submit" class="btn btn-primary" id="authSubmit">登录</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- 还没有空间 -->
+    <section class="view" data-view="none">
+      <div class="card cloud-card">
+        <h2 class="card-title">还没有你们的空间</h2>
+        <p class="hint" id="whoAmI"></p>
+        <p class="hint">两种方式二选一：创建新的「小小世界」并邀请另一半，或输入 TA 的邀请码加入。</p>
+        <form id="createForm" class="field" style="margin-top:10px">
+          <span class="label">空间名字</span>
+          <input type="text" class="input" id="spaceName" maxlength="20" value="小小世界">
+          <button type="submit" class="btn btn-primary" style="margin-top:10px">✨ 创建空间并生成邀请码</button>
+        </form>
+        <hr style="border-top:2px dashed rgba(44,44,44,.3);margin:16px 0">
+        <form id="joinForm" class="field">
+          <span class="label">另一半的邀请码（TA 创建空间后给你）</span>
+          <input type="text" class="input" id="joinCode" maxlength="8" placeholder="例如 ABC123" style="text-transform:uppercase">
+          <button type="submit" class="btn btn-accent" style="margin-top:10px">🔗 用邀请码加入</button>
+        </form>
+        <div class="form-actions" style="margin-top:14px">
+          <span class="spacer"></span>
+          <button type="button" class="btn btn-ghost small" id="btnLogout2">退出登录</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 空间主页 -->
+    <section class="view" data-view="dash">
+      <div class="card cloud-card">
+        <h2 class="card-title"><span class="hl" id="dashName">小小世界</span></h2>
+        <p class="hint" id="dashStatus"></p>
+        <div id="ownerBlock">
+          <div class="field">
+            <span class="label">把邀请码发给另一半，TA 注册后输入即可加入</span>
+            <div class="code-box" id="dashCode">------</div>
+            <div class="form-actions">
+              <button type="button" class="btn" id="btnCopy">📋 复制邀请码</button>
+              <button type="button" class="btn btn-ghost" id="btnRefresh">🔄 刷新（看 TA 加入了没）</button>
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <span class="label">成员</span>
+          <div id="dashMembers"></div>
+        </div>
+        <div class="form-actions">
+          <span class="spacer"></span>
+          <button type="button" class="btn btn-danger small" id="btnLeaveSpace">解散/退出空间</button>
+          <button type="button" class="btn btn-ghost small" id="btnLogout">退出登录</button>
+        </div>
+      </div>
+      <p class="hint" style="text-align:center">M1 只做「账号 + 空间绑定」，记录功能接入云端在 M2 开始。</p>
+    </section>
+
+  </div></main>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
