@@ -129,6 +129,13 @@
       btn.textContent = '正在处理…';
       btn.disabled = true;
       setAuthMsg('', false);
+      var done = false;
+      var timer = setTimeout(function () {
+        if (done) return;
+        setAuthMsg('连接云端超时：网络较慢或被限制，请检查网络 / 代理后重试', true);
+        btn.textContent = authMode === 'login' ? '登录' : '注册';
+        btn.disabled = false;
+      }, 12000);
       var req = authMode === 'register'
         ? sb.auth.signUp({ email: email, password: pwd })
         : sb.auth.signInWithPassword({ email: email, password: pwd });
@@ -144,6 +151,8 @@
       }).catch(function (err) {
         setAuthMsg('网络或服务异常：' + (err && err.message ? err.message : '未知错误') + '，请重试', true);
       }).then(function () {
+        done = true;
+        clearTimeout(timer);
         btn.textContent = authMode === 'login' ? '登录' : '注册';
         btn.disabled = false;
       });
