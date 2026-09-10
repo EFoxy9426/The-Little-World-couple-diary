@@ -670,7 +670,25 @@
         });
       });
     } else if (w.status === 'done') {
-      addBtn(acts, '📷 加完成照', 'btn small', function () { addWishPhoto(card, w); });
+      var addLbl = el('label', 'btn small file-btn', '📷 加完成照');
+      var addIn = el('input');
+      addIn.type = 'file';
+      addIn.accept = 'image/*';
+      addIn.addEventListener('change', function () {
+        var files = addIn.files ? Array.prototype.slice.call(addIn.files) : [];
+        addIn.value = '';
+        if (!files.length) return;
+        var first = files[0];
+        if (!first.type || first.type.indexOf('image/') !== 0) return;
+        compressImage(first, function (dataURL) {
+          if (!dataURL) { toast('这张图片读不了，换一张试试'); return; }
+          w.photos = w.photos || [];
+          w.photos.push(dataURL);
+          if (persist()) renderWishes();
+        });
+      });
+      addLbl.appendChild(addIn);
+      acts.appendChild(addLbl);
     } else if (w.status === 'gaveup') {
       addBtn(acts, '↩ 重新许愿', 'btn small', function () {
         w.status = 'open'; w.gaveupDate = null;
@@ -703,21 +721,24 @@
     doneInput.max = store.todayStr();
     dateField.appendChild(doneInput);
     var photoRow = el('div', 'wish-actions');
-    var camBtn = el('button', 'btn small', '📷 选照片');
-    camBtn.type = 'button';
-    camBtn.addEventListener('click', function () {
-      pickImages(false, function (files) {
-        if (!files || !files.length) return;
-        var first = files[0];
-        if (first.type && first.type.indexOf('image/') === 0) {
-          compressImage(first, function (dataURL) {
-            if (dataURL) { tmp.push(dataURL); paintPhotos(); }
-            else toast('这张图片读不了，换一张试试');
-          });
-        }
-      });
+    var camLbl = el('label', 'btn small file-btn', '📷 选照片');
+    var camIn = el('input');
+    camIn.type = 'file';
+    camIn.accept = 'image/*';
+    camIn.addEventListener('change', function () {
+      var files = camIn.files ? Array.prototype.slice.call(camIn.files) : [];
+      camIn.value = '';
+      if (!files.length) return;
+      var first = files[0];
+      if (first.type && first.type.indexOf('image/') === 0) {
+        compressImage(first, function (dataURL) {
+          if (dataURL) { tmp.push(dataURL); paintPhotos(); }
+          else toast('这张图片读不了，换一张试试');
+        });
+      }
     });
-    photoRow.appendChild(camBtn);
+    camLbl.appendChild(camIn);
+    photoRow.appendChild(camLbl);
     var prev = el('div', 'wish-photos');
     function paintPhotos() {
       clearNode(prev);
