@@ -9,6 +9,7 @@
 <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#fffef5">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="小小世界">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="apple-touch-icon" href="/icon-192.png">
   <script>
@@ -122,7 +123,7 @@
             <div class="field">
               <span class="label">照片（可选，会自动压缩保存）</span>
               <div class="photo-bar">
-                <label class="label" for="memPhotoInput">照片（可选，可多选）</label>
+                <label class="label" for="memPhotoInput">照片（可选，可多选；长按图片可删除/替换）</label>
                 <input type="file" id="memPhotoInput" class="input file-native" accept="image/*" multiple>
                 <button type="button" class="btn btn-ghost small hidden" id="memClearPhotos">清空已选</button>
               </div>
@@ -313,6 +314,10 @@
             <p class="hint">照片保存在私有云存储里，只有空间内的两个人能看到。建议定期「导出备份」，把回忆多留一份。</p>
             <p class="hint">免费版服务器在海外，国内访问偶尔可能偏慢；如需更稳定的访问，可后续迁移服务器，数据不受影响。</p>
             <p class="hint">版本：v2026-09-10 · 云端双人版</p>
+            <div class="btn-row">
+              <button type="button" class="btn btn-primary hidden" id="btnInstallApp">📲 安装到手机桌面</button>
+            </div>
+            <p class="hint">安卓：Chrome 菜单 →「安装应用 / 添加到主屏幕」；iPhone：请用 <b>Safari</b> 打开 → 分享 →「添加到主屏幕」（用 Chrome/微信打开只会生成普通网页快捷方式）。</p>
           </div>
         </div>
       </section>

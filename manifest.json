@@ -1,13 +1,24 @@
 {
+  "id": "/",
   "name": "小小世界",
   "short_name": "小小世界",
   "description": "两个人的私密数字回忆本",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "portrait",
   "background_color": "#fffef5",
   "theme_color": "#fffef5",
   "lang": "zh-CN",
+  "categories": [
+    "lifestyle",
+    "social"
+  ],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icon-192.png",
@@ -19,7 +30,13 @@
       "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

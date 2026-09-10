@@ -69,6 +69,66 @@
     setTimeout(cleanup, 60000);
     fi.click();
   }
+
+  function closePhotoMenu() {
+    var m = $('photoMenu');
+    if (m && m.parentNode) m.parentNode.removeChild(m);
+    var k = $('photoMenuMask');
+    if (k && k.parentNode) k.parentNode.removeChild(k);
+  }
+
+  function showPhotoMenu(items) {
+    closePhotoMenu();
+    var mask = el('div', 'photo-menu-mask');
+    mask.id = 'photoMenuMask';
+    mask.addEventListener('click', closePhotoMenu);
+    var wrap = el('div', 'photo-menu');
+    wrap.id = 'photoMenu';
+    for (var i = 0; i < items.length; i++) {
+      (function (it) {
+        var b = el('button', 'photo-menu-btn', it.label);
+        b.type = 'button';
+        b.addEventListener('click', function () { closePhotoMenu(); it.run(); });
+        wrap.appendChild(b);
+      })(items[i]);
+    }
+    var cancel = el('button', 'photo-menu-btn cancel', '取消');
+    cancel.type = 'button';
+    cancel.addEventListener('click', closePhotoMenu);
+    wrap.appendChild(cancel);
+    document.body.appendChild(mask);
+    document.body.appendChild(wrap);
+  }
+
+  function bindLongPress(node, handler) {
+    var timer = null, moved = false, sx = 0, sy = 0;
+    function start(e) {
+      var t = e.touches ? e.touches[0] : e;
+      sx = t.clientX; sy = t.clientY; moved = false;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(function () {
+        timer = null;
+        if (!moved) handler();
+      }, 600);
+    }
+    function move(e) {
+      if (!timer) return;
+      var t = e.touches ? e.touches[0] : e;
+      if (Math.abs(t.clientX - sx) > 10 || Math.abs(t.clientY - sy) > 10) {
+        moved = true; clearTimeout(timer); timer = null;
+      }
+    }
+    function end() { if (timer) { clearTimeout(timer); timer = null; } }
+    node.addEventListener('touchstart', start, { passive: true });
+    node.addEventListener('touchmove', move, { passive: true });
+    node.addEventListener('touchend', end);
+    node.addEventListener('touchcancel', end);
+    node.addEventListener('mousedown', start);
+    node.addEventListener('mousemove', move);
+    node.addEventListener('mouseup', end);
+    node.addEventListener('mouseleave', end);
+    node.addEventListener('contextmenu', function (e) { e.preventDefault(); handler(); });
+  }
   function partner(k) { return S.couple.partners[k]; }
   function me() { return partner(current); }
   function addBtn(parent, text, cls, fn, aria) {
@@ -265,15 +325,14 @@
         var img = el('img');
         img.src = dataURL;
         img.alt = '待添加照片';
-        var rm = el('button', '', '✕');
-        rm.type = 'button';
-        rm.setAttribute('aria-label', '移除这张照片');
-        rm.addEventListener('click', function () {
-          pendingPhotos.splice(idx, 1);
-          renderPhotoPreview();
+        bindLongPress(wrap, function () {
+          ask('移除这张照片？', '这张照片还没保存，移除后需要重新选择。', true).then(function (ok) {
+            if (!ok) return;
+            pendingPhotos.splice(idx, 1);
+            renderPhotoPreview();
+          });
         });
         wrap.appendChild(img);
-        wrap.appendChild(rm);
         box.appendChild(wrap);
       })(i, pendingPhotos[i]);
     }
@@ -396,29 +455,21 @@
           var img = el('img');
           bindImg(img, mem.photos[idx]);
           img.alt = '点滴照片';
-          var acts = el('div', 'ph-actions');
-          var rep = document.createElement('label');
-          rep.className = 'mini-btn';
-          rep.title = '替换这张照片';
-          rep.setAttribute('aria-label', '替换这张照片');
-          var fi = document.createElement('input');
-          fi.type = 'file';
-          fi.accept = 'image/*';
-          fi.style.display = 'none';
-          fi.addEventListener('change', function () {
-            if (fi.files && fi.files.length) replaceMemPhoto(mem, idx, fi.files[0]);
-            fi.value = '';
+          bindLongPress(ph, function () {
+            showPhotoMenu([
+              { label: '🔁 替换这张照片', run: function () {
+                pickImages(false, function (files) {
+                  if (files && files[0]) replaceMemPhoto(mem, idx, files[0]);
+                });
+              } },
+              { label: '🗑️ 删除这张照片', run: function () {
+                ask('删除这张照片？', '删除后无法恢复，确定吗？', true).then(function (ok) {
+                  if (ok) removeMemPhoto(mem, idx);
+                });
+              } }
+            ]);
           });
-          rep.appendChild(document.createTextNode('↻'));
-          rep.appendChild(fi);
-          var rm = el('button', 'mini-btn danger', '✕');
-          rm.type = 'button';
-          rm.setAttribute('aria-label', '删除这张照片');
-          rm.addEventListener('click', function () { removeMemPhoto(mem, idx); });
-          acts.appendChild(rep);
-          acts.appendChild(rm);
           ph.appendChild(img);
-          ph.appendChild(acts);
           phWrap.appendChild(ph);
         })(p);
       }
@@ -643,16 +694,15 @@
           var img = el('img');
           bindImg(img, w.photos[idx]);
           img.alt = '愿望照片';
-          var rm = el('button', 'mini-btn', '✕');
-          rm.type = 'button';
-          rm.setAttribute('aria-label', '删除这张照片');
-          rm.addEventListener('click', function () {
-            if (store.cloud && store.deletePhoto) store.deletePhoto(w.photos[idx]);
-            w.photos.splice(idx, 1);
-            if (persist()) paintWishView(card, w);
+          bindLongPress(ph, function () {
+            ask('删除这张照片？', '删除后无法恢复，确定吗？', true).then(function (ok) {
+              if (!ok) return;
+              if (store.cloud && store.deletePhoto) store.deletePhoto(w.photos[idx]);
+              w.photos.splice(idx, 1);
+              if (persist()) paintWishView(card, w);
+            });
           });
           ph.appendChild(img);
-          ph.appendChild(rm);
           phWrap.appendChild(ph);
         })(pi);
       }
@@ -748,12 +798,14 @@
           var img = el('img');
           img.src = tmp[idx];
           img.alt = '完成照片';
-          var rm = el('button', 'mini-btn', '✕');
-          rm.type = 'button';
-          rm.setAttribute('aria-label', '移除这张照片');
-          rm.addEventListener('click', function () { tmp.splice(idx, 1); paintPhotos(); });
+          bindLongPress(ph, function () {
+            ask('移除这张照片？', '移除后需要重新选择。', true).then(function (ok) {
+              if (!ok) return;
+              tmp.splice(idx, 1);
+              paintPhotos();
+            });
+          });
           ph.appendChild(img);
-          ph.appendChild(rm);
           prev.appendChild(ph);
         })(i);
       }
@@ -1069,6 +1121,29 @@
       });
     }
 
+
+    /* PWA 安装到桌面 */
+    (function () {
+      var btn = $('btnInstallApp');
+      var standalone = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches;
+      if (standalone && btn) btn.classList.add('hidden');
+      window.addEventListener('beforeinstallprompt', function (e) {
+        e.preventDefault();
+        window.__xxInstall = e;
+        if (btn) btn.classList.remove('hidden');
+      });
+      if (btn) {
+        btn.addEventListener('click', function () {
+          var ev = window.__xxInstall;
+          if (!ev) { toast('请用浏览器菜单里的「安装应用 / 添加到主屏幕」'); return; }
+          ev.prompt();
+          ev.userChoice.then(function () {
+            window.__xxInstall = null;
+            btn.classList.add('hidden');
+          });
+        });
+      }
+    })();
 
     /* 首页快速记录 */
     $('btnQuickNote').addEventListener('click', function () {
