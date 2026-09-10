@@ -670,8 +670,9 @@
         });
       });
     } else if (w.status === 'done') {
-      var addLbl = el('label', 'btn small file-btn', '📷 加完成照');
-      var addIn = el('input');
+      var addWrap = el('div', 'field');
+      addWrap.appendChild(el('span', 'label', '加完成照（可选）'));
+      var addIn = el('input', 'input file-native');
       addIn.type = 'file';
       addIn.accept = 'image/*';
       addIn.addEventListener('change', function () {
@@ -687,8 +688,8 @@
           if (persist()) renderWishes();
         });
       });
-      addLbl.appendChild(addIn);
-      acts.appendChild(addLbl);
+      addWrap.appendChild(addIn);
+      acts.appendChild(addWrap);
     } else if (w.status === 'gaveup') {
       addBtn(acts, '↩ 重新许愿', 'btn small', function () {
         w.status = 'open'; w.gaveupDate = null;
@@ -720,9 +721,9 @@
     doneInput.value = store.todayStr();
     doneInput.max = store.todayStr();
     dateField.appendChild(doneInput);
-    var photoRow = el('div', 'wish-actions');
-    var camLbl = el('label', 'btn small file-btn', '📷 选照片');
-    var camIn = el('input');
+    var photoRow = el('div', 'field');
+    photoRow.appendChild(el('span', 'label', '照片（可选）'));
+    var camIn = el('input', 'input file-native');
     camIn.type = 'file';
     camIn.accept = 'image/*';
     camIn.addEventListener('change', function () {
@@ -737,8 +738,7 @@
         });
       }
     });
-    camLbl.appendChild(camIn);
-    photoRow.appendChild(camLbl);
+    photoRow.appendChild(camIn);
     var prev = el('div', 'wish-photos');
     function paintPhotos() {
       clearNode(prev);

@@ -595,3 +595,15 @@ select.input{cursor:pointer}
 /* 原生文件选择按钮（手机兼容性最好） */
 .file-btn{position:relative;overflow:hidden}
 .file-btn input[type="file"]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+
+
+/* 原生文件选择控件（手机兼容） */
+.file-native{padding:8px 10px;font-size:14px;color:var(--muted);line-height:1.6}
+.file-native::file-selector-button{
+  font:inherit;font-weight:700;margin-right:10px;padding:6px 14px;
+  border:2px dashed var(--ink);border-radius:8px;background:var(--paper);color:var(--ink);cursor:pointer;
+}
+.file-native::-webkit-file-upload-button{
+  font:inherit;font-weight:700;margin-right:10px;padding:6px 14px;
+  border:2px dashed var(--ink);border-radius:8px;background:var(--paper);color:var(--ink);cursor:pointer;
+}

@@ -122,7 +122,8 @@
             <div class="field">
               <span class="label">照片（可选，会自动压缩保存）</span>
               <div class="photo-bar">
-                <label class="btn btn-ghost small file-btn">📷 添加照片<input type="file" id="memPhotoInput" accept="image/*" multiple></label>
+                <label class="label" for="memPhotoInput">照片（可选，可多选）</label>
+                <input type="file" id="memPhotoInput" class="input file-native" accept="image/*" multiple>
                 <button type="button" class="btn btn-ghost small hidden" id="memClearPhotos">清空已选</button>
               </div>
               <div class="photo-preview" id="memPhotoPreview"></div>
