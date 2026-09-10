@@ -1,0 +1,1 @@
+# config.js 只含 Supabase Publishable key（客户端公开安全），部署时需要带上，故不忽略
