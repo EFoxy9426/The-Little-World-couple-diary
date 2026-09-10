@@ -1,6 +1,30 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
+  <script id="xx-error-guard">
+    (function () {
+      function show(msg) {
+        var el = document.getElementById('modeHint');
+        if (el) { el.textContent = msg; el.style.color = '#ff6b6b'; }
+        else { document.addEventListener('DOMContentLoaded', function () { var e2 = document.getElementById('modeHint'); if (e2) { e2.textContent = msg; e2.style.color = '#ff6b6b'; } }); }
+      }
+      window.addEventListener('error', function (e) {
+        var src = e && e.target && e.target.src ? ('资源加载失败：' + e.target.src) : (e && e.message ? ('脚本错误：' + e.message) : '页面资源加载失败');
+        show(src);
+      }, true);
+      window.addEventListener('unhandledrejection', function (e) {
+        var r = e && e.reason;
+        show('请求出错：' + ((r && r.message) || r || '未知错误'));
+      });
+      setTimeout(function () {
+        var el = document.getElementById('modeHint');
+        if (el && el.textContent.indexOf('正在连接') === 0) {
+          el.textContent = '加载较慢或脚本未启动：请按 F12 看 Console 报错';
+          el.style.color = '#ff6b6b';
+        }
+      }, 5000);
+    })();
+  </script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>小小世界 · 云端</title>
@@ -31,7 +55,7 @@
     <div class="brand"><span class="brand-mark">❤</span><span class="brand-name">小小世界</span><span class="brand-tag">云端版 · M1</span></div>
   </div></header>
   <main class="page"><div class="container">
-    <p class="mode-hint" id="modeHint">正在连接…</p>
+    <p class="mode-hint" id="modeHint">正在加载…</p>
 
     <!-- 登录 / 注册 -->
     <section class="view is-active" data-view="auth">
