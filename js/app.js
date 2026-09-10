@@ -47,16 +47,27 @@
     if (!store.cloud || !store.getPhotoUrl) { img.src = src; return; }
     store.getPhotoUrl(src, function (url) { img.src = url || src; });
   }
-  function resetPhotoPickers() {
-    var memInput = $('memPhotoInput');
-    if (memInput) memInput.value = '';
-    var temps = document.querySelectorAll('input.xx-temp-photo');
-    for (var i = 0; i < temps.length; i++) {
-      var ti = temps[i];
-      if (!ti.files || ti.files.length === 0) {
-        if (ti.parentNode) ti.parentNode.removeChild(ti);
-      }
+  function pickImages(multiple, cb) {
+    var fi = document.createElement('input');
+    fi.type = 'file';
+    fi.accept = 'image/*';
+    if (multiple) fi.multiple = true;
+    fi.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0';
+    document.body.appendChild(fi);
+    var done = false;
+    function cleanup() {
+      if (done) return;
+      done = true;
+      if (fi.parentNode) fi.parentNode.removeChild(fi);
     }
+    fi.addEventListener('change', function () {
+      var files = fi.files ? Array.prototype.slice.call(fi.files) : [];
+      cleanup();
+      cb(files);
+    });
+    fi.addEventListener('cancel', cleanup);
+    setTimeout(cleanup, 60000);
+    fi.click();
   }
   function partner(k) { return S.couple.partners[k]; }
   function me() { return partner(current); }
@@ -291,19 +302,19 @@
     reader.readAsDataURL(file);
   }
 
-  function onMemPhotoChange(ev) {
-    var files = Array.prototype.slice.call(ev.target.files || []);
-    if (files.length === 0) return;
+  function processMemFiles(files) {
+    if (!files || files.length === 0) return;
     if (pendingPhotos.length + files.length > 6) { toast('一次最多 6 张照片哦'); return; }
-    var left = files.length;
     files.forEach(function (f) {
-      if (!f.type || f.type.indexOf('image/') !== 0) { left--; return; }
+      if (!f.type || f.type.indexOf('image/') !== 0) return;
       compressImage(f, function (dataURL) {
-        left--;
         if (dataURL) { pendingPhotos.push(dataURL); renderPhotoPreview(); }
-        if (left <= 0) $('memPhotoInput').value = '';
       });
     });
+  }
+  function onMemPhotoChange(ev) {
+    processMemFiles(Array.prototype.slice.call(ev.target.files || []));
+    ev.target.value = '';
   }
 
   function renderMemFilterChips() {
@@ -680,7 +691,7 @@
 
   function showWishComplete(card, w) {
     clearNode(card);
-    card.className = 'card wish-item tilt-card';
+    card.className = 'card wish-edit tilt-card';
     var tmp = [];
     var title = el('h3', 'card-sub', '✅ 完成「' + w.text + '」');
     var note = el('p', 'complete-note', '完成日期默认今天，可改成实际完成的那天；照片可选。');
@@ -692,27 +703,21 @@
     doneInput.max = store.todayStr();
     dateField.appendChild(doneInput);
     var photoRow = el('div', 'wish-actions');
-    var lbl = el('label', 'btn small', '📷 选照片');
-    var fi = el('input');
-    fi.type = 'file';
-    fi.accept = 'image/*';
-    fi.style.display = 'none';
-    fi.className = 'xx-temp-photo';
-    fi.addEventListener('cancel', function () { if (fi.parentNode) fi.parentNode.removeChild(fi); });
-    fi.addEventListener('change', function () {
-      if (fi.files && fi.files.length) {
-        var first = fi.files[0];
+    var camBtn = el('button', 'btn small', '📷 选照片');
+    camBtn.type = 'button';
+    camBtn.addEventListener('click', function () {
+      pickImages(false, function (files) {
+        if (!files || !files.length) return;
+        var first = files[0];
         if (first.type && first.type.indexOf('image/') === 0) {
           compressImage(first, function (dataURL) {
             if (dataURL) { tmp.push(dataURL); paintPhotos(); }
             else toast('这张图片读不了，换一张试试');
           });
         }
-      }
-      fi.value = '';
+      });
     });
-    lbl.appendChild(fi);
-    photoRow.appendChild(lbl);
+    photoRow.appendChild(camBtn);
     var prev = el('div', 'wish-photos');
     function paintPhotos() {
       clearNode(prev);
@@ -751,7 +756,7 @@
 
   function showWishEditor(card, w) {
     clearNode(card);
-    card.className = 'card wish-item tilt-card';
+    card.className = 'card wish-edit tilt-card';
     var title = el('h3', 'card-sub', '✏️ 编辑愿望');
     var fText = el('input', 'input');
     fText.value = w.text;
@@ -811,33 +816,17 @@
   }
 
   function addWishPhoto(card, w) {
-    var fi = document.createElement('input');
-    fi.type = 'file';
-    fi.accept = 'image/*';
-    fi.style.display = 'none';
-    document.body.appendChild(fi);
-    fi.className = 'xx-temp-photo';
-    fi.addEventListener('change', function () {
-      if (fi.files && fi.files.length) {
-        var first = fi.files[0];
-        if (first.type && first.type.indexOf('image/') === 0) {
-          compressImage(first, function (dataURL) {
-            if (dataURL) {
-              w.photos = w.photos || [];
-              w.photos.push(dataURL);
-              if (persist()) renderWishes();
-            } else {
-              toast('这张图片读不了，换一张试试');
-            }
-          });
-        }
-      }
-      try { document.body.removeChild(fi); } catch (e) {}
+    pickImages(false, function (files) {
+      if (!files || !files.length) return;
+      var first = files[0];
+      if (!first.type || first.type.indexOf('image/') !== 0) return;
+      compressImage(first, function (dataURL) {
+        if (!dataURL) { toast('这张图片读不了，换一张试试'); return; }
+        w.photos = w.photos || [];
+        w.photos.push(dataURL);
+        if (persist()) renderWishes();
+      });
     });
-    fi.addEventListener('cancel', function () {
-      try { document.body.removeChild(fi); } catch (e) {}
-    });
-    fi.click();
   }
   /* ---------- 悄悄话 ---------- */
   function renderNotes() {
@@ -1070,15 +1059,8 @@
     /* 点滴 */
     $('memForm').addEventListener('submit', submitMem);
     $('memPhotoInput').addEventListener('change', onMemPhotoChange);
-    var memPhotoLabel = document.querySelector('label[for="memPhotoInput"]');
-    if (memPhotoLabel) {
-      memPhotoLabel.addEventListener('click', function () {
-        var mi = $('memPhotoInput');
-        if (mi) mi.value = '';
-      });
-    }
-    window.addEventListener('focus', function () { setTimeout(resetPhotoPickers, 500); });
-    document.addEventListener('visibilitychange', function () { if (!document.hidden) setTimeout(resetPhotoPickers, 500); });
+    var memPhotoBtn = $('memPhotoBtn');
+    if (memPhotoBtn) memPhotoBtn.addEventListener('click', function () { pickImages(true, processMemFiles); });
     $('memClearPhotos').addEventListener('click', function () { pendingPhotos = []; renderPhotoPreview(); });
     $('memCancelEdit').addEventListener('click', cancelEditMem);
     $('memDate').addEventListener('change', function () {});
