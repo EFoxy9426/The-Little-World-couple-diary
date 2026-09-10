@@ -919,11 +919,7 @@
     renderEmojiPanel('bro');
     renderEmojiPanel('sis');
     renderAnnEmojiPanel();
-    var bi = $('bindInfo');
-    if (bi) {
-      var b = S.couple.bound;
-      bi.textContent = b ? ('当前绑定：' + partner(b.key).emoji + ' ' + partner(b.key).name + '（绑定于 ' + b.at + '）。之后你写的内容都会以 ' + partner(b.key).name + ' 署名，不可自由切换。') : '尚未绑定身份。';
-    }
+
     var sp = $('spaceLine');
     if (sp) {
       var bytes = 0;
@@ -1025,20 +1021,7 @@
         }
       });
     }
-    var unbindBtn = $('btnUnbind');
-    if (unbindBtn) {
-      unbindBtn.addEventListener('click', function () {
-        ask('解除身份绑定？', '解除后需重新选择身份，已有内容保留原署名。正式云版将用账号 + 邀请码绑定、不可自行更换（此按钮仅供单机原型测试）。', true).then(function (ok) {
-          if (!ok) return;
-          S.couple.bound = null;
-          if (persist()) {
-            renderAll();
-            var ov = $('bindOverlay');
-            if (ov) ov.classList.remove('hidden');
-          }
-        });
-      });
-    }
+
 
     /* 首页快速记录 */
     $('btnQuickNote').addEventListener('click', function () {
