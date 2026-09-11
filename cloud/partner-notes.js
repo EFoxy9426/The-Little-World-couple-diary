@@ -61,19 +61,28 @@
   function catOf(v) { for (var i = 0; i < CATS.length; i++) if (CATS[i].v === v) return CATS[i]; return { v: v, e: '📦' }; }
   function findNote(id) { for (var i = 0; i < data.my_notes.length; i++) if (String(data.my_notes[i].id) === String(id)) return data.my_notes[i]; return null; }
   function expsOf(id) { var out = []; for (var i = 0; i < data.explanations.length; i++) if (String(data.explanations[i].note_id) === String(id)) out.push(data.explanations[i]); return out; }
-  function notify(title, desp) {
+  function notify(title, desp, cb) {
     try {
-      var c = sb(); if (!c) return;
+      var c = sb(); if (!c) { if (cb) cb({ ok: false, error: '云端未连接' }); return; }
       c.auth.getSession().then(function (r) {
         var token = (r && r.data && r.data.session) ? r.data.session.access_token : '';
-        if (!token) return;
+        if (!token) { if (cb) cb({ ok: false, error: '登录已过期' }); return; }
         fetch('/api/notify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
           body: JSON.stringify({ title: title, desp: desp })
-        }).catch(function () {});
+        }).then(function (res) {
+          return res.json().catch(function () { return {}; }).then(function (j) {
+            var out = { ok: res.ok && j.ok !== false, status: res.status, body: j };
+            if (!out.ok) console.warn('[推送失败]', out);
+            if (cb) cb(out);
+          });
+        }).catch(function (e) {
+          console.warn('[推送请求失败]', e);
+          if (cb) cb({ ok: false, error: e.message });
+        });
       });
-    } catch (e) {}
+    } catch (e) { if (cb) cb({ ok: false, error: e.message }); }
   }
   window.xxNotify = notify;
   function pill(text, cls) { return el('span', 'pn-pill ' + (cls || ''), text); }
@@ -562,6 +571,14 @@
     var tabs = $('pnSubtabs'); if (!tabs) return;
     refreshBadge();
     setInterval(refreshBadge, 20000);
+    var tn = document.getElementById('btnTestNotify');
+    if (tn) tn.addEventListener('click', function () {
+      toast('正在发送测试推送…');
+      notify('小小世界 · 测试推送', '如果你在微信收到这条消息，说明推送配置成功 ✅', function (res) {
+        if (res && res.ok) toast('测试推送已发送，请查看微信 ✔');
+        else toast('推送失败：' + ((res && (res.error || (res.body && res.body.error))) || ('HTTP ' + ((res && res.status) || '?'))));
+      });
+    });
     setTimeout(checkAnniversaries, 4000);
     setInterval(checkAnniversaries, 6 * 3600 * 1000);
     tabs.addEventListener('click', function (e) {

@@ -921,12 +921,6 @@
   }
   /* ---------- 悄悄话 ---------- */
   function renderNotes() {
-    var changed = false;
-    for (var ni = 0; ni < S.notes.length; ni++) {
-      var n0 = S.notes[ni];
-      if (n0.by !== current && !n0.read) { n0.read = true; changed = true; }
-    }
-    if (changed) { try { store.save(S); } catch (e) {} }
     $('noteAs').textContent = '这封会署名：' + me().name + ' ' + me().emoji;
     $('noteStampNow').textContent = '现在 ' + store.nowStamp();
     $('noteCount').textContent = '共 ' + S.notes.length + ' 封';
@@ -941,9 +935,55 @@
       return;
     }
     for (var i = 0; i < arr.length; i++) wrap.appendChild(buildNoteCard(arr[i]));
+    observeNoteReads();
+  }
+
+  function markNoteRead(id) {
+    var note = null;
+    for (var i = 0; i < S.notes.length; i++) if (String(S.notes[i].id) === String(id)) note = S.notes[i];
+    if (!note || note.read || note.by === current) return;
+    note.read = true;
+    try { store.save(S); } catch (e) {}
+    var card = document.querySelector('[data-note-id="' + id + '"]');
+    if (card) {
+      var btn = card.querySelector('.note-read');
+      if (btn) { btn.textContent = '对方已读 ✓'; btn.classList.add('on'); }
+    }
+  }
+
+  function observeNoteReads() {
+    var list = $('noteList');
+    if (!list) return;
+    var cards = list.querySelectorAll('.note-card[data-note-id]');
+    var pending = [];
+    for (var i = 0; i < cards.length; i++) {
+      var id = cards[i].getAttribute('data-note-id');
+      var note = null;
+      for (var k = 0; k < S.notes.length; k++) if (String(S.notes[k].id) === String(id)) note = S.notes[k];
+      if (note && note.by !== current && !note.read) pending.push(cards[i]);
+    }
+    if (!pending.length) return;
+    if (!('IntersectionObserver' in window)) {
+      setTimeout(function () {
+        for (var i = 0; i < pending.length; i++) markNoteRead(pending[i].getAttribute('data-note-id'));
+      }, 2000);
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      for (var i = 0; i < entries.length; i++) {
+        (function (en) {
+          if (!en.isIntersecting) return;
+          var id = en.target.getAttribute('data-note-id');
+          io.unobserve(en.target);
+          setTimeout(function () { markNoteRead(id); }, 1200);
+        })(entries[i]);
+      }
+    }, { threshold: 0.55 });
+    for (var j = 0; j < pending.length; j++) io.observe(pending[j]);
   }
   function buildNoteCard(n) {
     var card = el('article', 'card note-card tilt-card');
+    card.setAttribute('data-note-id', n.id);
     var head = el('div', 'note-head');
     var who = el('div', 'note-who');
     who.appendChild(el('span', 'ava', partner(n.by).emoji));
