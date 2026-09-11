@@ -1026,6 +1026,31 @@
     return card;
   }
   /* ---------- 设置 ---------- */
+  function buildExportPayload(cb) {
+    var payload = { app: S, exportedAt: store.nowStamp(), version: 2, partnerNotebook: null };
+    if (store.cloud && store.client) {
+      try {
+        store.client().rpc('partner_notebook_export').then(function (r) {
+          if (r && !r.error && r.data) payload.partnerNotebook = r.data;
+          cb(payload);
+        }).catch(function () { cb(payload); });
+        return;
+      } catch (e) {}
+    }
+    cb(payload);
+  }
+  function downloadJson(json, fname) {
+    var blob = new Blob([json], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = fname;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+  }
+
   function renderSettings() {
     $('setName').value = S.couple.name;
     $('setSince').value = S.couple.since;
@@ -1047,8 +1072,16 @@
         sp.textContent = txt + ' ⚠️ 快满了，请导出备份并清理';
         sp.classList.add('warn');
       } else {
-        sp.textContent = txt + '（浏览器本地空间有限，建议定期导出）';
+        sp.textContent = txt + '（含 TA 的小本本，建议定期导出）';
         sp.classList.remove('warn');
+      }
+      if (store.cloud && store.client) {
+        store.client().rpc('partner_notebook_export').then(function (r2) {
+          if (r2.error || !r2.data) return;
+          var pnBytes = JSON.stringify(r2.data).length * 2;
+          var pnTxt = pnBytes < 1024 ? (pnBytes + ' B') : (Math.round(pnBytes / 1024) + ' KB');
+          sp.textContent = sp.textContent + '；TA 的小本本约 ' + pnTxt;
+        });
       }
     }
     var le = $('lastExportLine');
@@ -1267,32 +1300,35 @@
 
     /* 设置：数据 */
     $('btnExport').addEventListener('click', function () {
-      var json = JSON.stringify(S, null, 2);
       var fname = '小小世界-备份-' + store.todayStr().replace(/-/g, '') + '.json';
-      if (window.showSaveFilePicker) {
-        window.showSaveFilePicker({
-          suggestedName: fname,
-          types: [{ description: 'JSON 备份', accept: { 'application/json': ['.json'] } }]
-        }).then(function (handle) {
-          return handle.createWritable().then(function (w) {
-            return w.write(json).then(function () { return w.close(); });
+      buildExportPayload(function (payload) {
+        var json = JSON.stringify(payload, null, 2);
+        var hasNotebook = !!payload.partnerNotebook;
+        if (window.showSaveFilePicker) {
+          window.showSaveFilePicker({
+            suggestedName: fname,
+            types: [{ description: 'JSON 备份', accept: { 'application/json': ['.json'] } }]
+          }).then(function (handle) {
+            return handle.createWritable().then(function (w) {
+              return w.write(json).then(function () { return w.close(); });
+            });
+          }).then(function () {
+            store.setLastExport(store.nowStamp());
+            renderSettings();
+            toast(hasNotebook ? '备份已保存（含 TA 的小本本）✔' : '备份已保存 ✔');
+          }).catch(function (err) {
+            if (err && err.name === 'AbortError') return;
+            toast('保存失败：' + (err && err.message ? err.message : '未知错误'));
           });
-        }).then(function () {
-          store.setLastExport(store.nowStamp());
-          renderSettings();
-          toast('备份已保存，记得再放一份到网盘更安心 ✔');
-        }).catch(function (err) {
-          if (err && err.name === 'AbortError') return;
-          toast('保存失败：' + (err && err.message ? err.message : '未知错误'));
-        });
-      } else {
-        try {
-          store.exportData(S);
-          store.setLastExport(store.nowStamp());
-          renderSettings();
-          toast('已开始下载：文件在浏览器的「下载」文件夹 ⬇️');
-        } catch (e) { toast('导出失败：' + e.message); }
-      }
+        } else {
+          try {
+            downloadJson(json, fname);
+            store.setLastExport(store.nowStamp());
+            renderSettings();
+            toast(hasNotebook ? '已开始下载（含 TA 的小本本）⬇️' : '已开始下载 ⬇️');
+          } catch (e) { toast('导出失败：' + e.message); }
+        }
+      });
     });
     $('btnImport').addEventListener('click', function () { $('importFile').click(); });
     $('importFile').addEventListener('change', function (ev) {
@@ -1300,15 +1336,25 @@
       if (!file) return;
       store.importFile(file, function (err, data) {
         if (err) { toast(err.message); return; }
-        S = data;
+        var notebook = null;
+        if (data && data.app) { S = data.app; notebook = data.partnerNotebook || null; }
+        else { S = data; notebook = (data && data.partnerNotebook) ? data.partnerNotebook : null; }
         persist();
         renderAll();
-        toast('导入成功，回忆回来啦 🎉');
+        if (notebook && store.cloud && store.client) {
+          store.client().rpc('partner_notebook_import', { p_payload: notebook }).then(function (r) {
+            if (r.error) { toast('小本本导入失败：' + r.error.message); return; }
+            toast('导入成功（含 TA 的小本本）🎉');
+            if (window.partnerNotesRefresh) window.partnerNotesRefresh();
+          });
+        } else {
+          toast('导入成功，回忆回来啦 🎉');
+        }
       });
       ev.target.value = '';
     });
     $('btnSample').addEventListener('click', function () {
-      ask('恢复示例数据？', '当前所有记录会被示例数据覆盖，建议先导出备份。确定继续吗？', true).then(function (ok) {
+      ask('恢复示例数据？', '点滴/愿望/悄悄话会被示例数据覆盖（TA 的小本本不受影响）。建议先导出备份。确定继续吗？', true).then(function (ok) {
         if (!ok) return;
         S = store.sample();
         persist();
@@ -1317,12 +1363,18 @@
       });
     });
     $('btnWipe').addEventListener('click', function () {
-      ask('清空所有记录？', '点滴、愿望、悄悄话都会被清空（保留我们的名字和日子）。此操作无法撤销！', true).then(function (ok) {
+      ask('清空所有记录？', '点滴、愿望、悄悄话、纪念日，以及「TA 的小本本」都会被清空（保留我们的名字和日子）。此操作无法撤销！', true).then(function (ok) {
         if (!ok) return;
         S = store.blank(S.couple);
         persist();
+        if (store.cloud && store.client) {
+          store.client().rpc('partner_notebook_clear').then(function (r) {
+            if (r.error) { toast('小本本清空失败：' + r.error.message); return; }
+            if (window.partnerNotesRefresh) window.partnerNotesRefresh();
+          });
+        }
         renderAll();
-        toast('已清空记录');
+        toast('已清空记录（含 TA 的小本本）');
       });
     });
 
