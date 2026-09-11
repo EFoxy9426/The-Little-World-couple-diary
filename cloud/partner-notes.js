@@ -262,21 +262,16 @@
 
   /* ---------- 关于我的 ---------- */
   function renderAbout(body) {
-    body.appendChild(applyForm());
     body.appendChild(el('h3', 'card-sub', 'TA 记录中与你有关的'));
     if (!data.about_me.length) {
       var e = el('div', 'empty');
       e.appendChild(el('span', 'big', '👀'));
-      e.appendChild(document.createTextNode('目前没有公开给你的条目；你仍然可以发起申请'));
-      var ab = el('div', 'pn-actions');
-      ab.style.justifyContent = 'center';
-      ab.appendChild(btn('🙋 去申请', 'btn-ghost', function () {
-        var f = document.querySelector('.pn-form');
-        if (f && f.scrollIntoView) f.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }));
-      e.appendChild(ab);
+      e.appendChild(document.createTextNode('TA 还没有记录与你有关的内容'));
       body.appendChild(e);
     } else {
+      var bar = el('div', 'pn-actions');
+      bar.appendChild(btn('🙋 申请查看更多（整本 / 按分类）', 'btn-ghost', function () { showApplySheet(); }));
+      body.appendChild(bar);
       for (var i = 0; i < data.about_me.length; i++) body.appendChild(aboutCard(data.about_me[i]));
     }
     var m = me(), mine = [];
@@ -337,15 +332,17 @@
     return card;
   }
 
-  function applyForm() {
-    var card = el('div', 'card pn-form');
-    card.appendChild(el('div', 'pn-sheet-title', '🙋 向 TA 发起申请'));
-    var row = el('div', 'form-row');
+  function showApplySheet() {
+    var mask = el('div', 'pn-sheet-mask');
+    var sheet = el('div', 'pn-sheet');
+    sheet.appendChild(el('div', 'pn-sheet-title', '🙋 申请查看 / 申请删除'));
+    sheet.appendChild(el('p', 'hint', '申请什么、是否同意，都由 TA 决定；被拒绝不影响你们其他功能。'));
+
     var kindSel = el('select', 'input');
     var k1 = el('option'); k1.value = 'access'; k1.textContent = '申请查看';
     var k2 = el('option'); k2.value = 'deletion'; k2.textContent = '请求删除';
     kindSel.appendChild(k1); kindSel.appendChild(k2);
-    row.appendChild(kindSel);
+    sheet.appendChild(kindSel);
 
     var scopeSel = el('select', 'input');
     var s1 = el('option'); s1.value = 'all'; s1.textContent = '整本';
@@ -353,16 +350,15 @@
     var s3 = el('option'); s3.value = 'note'; s3.textContent = '单条记录';
     s3.disabled = (data.about_me.length === 0);
     scopeSel.appendChild(s1); scopeSel.appendChild(s2); scopeSel.appendChild(s3);
-    row.appendChild(scopeSel);
+    sheet.appendChild(scopeSel);
 
     var valSel = el('select', 'input');
     valSel.style.display = 'none';
-    row.appendChild(valSel);
-    card.appendChild(row);
+    sheet.appendChild(valSel);
 
     var msgIn = el('input', 'input');
     msgIn.placeholder = '想说的话（可选）';
-    card.appendChild(msgIn);
+    sheet.appendChild(msgIn);
 
     function fillVal() {
       clear(valSel);
@@ -378,17 +374,24 @@
     }
     scopeSel.addEventListener('change', fillVal); fillVal();
 
-    card.appendChild(btn('提交申请', 'btn-accent', function () {
+    var acts = el('div', 'pn-actions');
+    acts.appendChild(btn('提交申请', 'btn-primary', function () {
       sb().rpc('request_partner_note', {
         p_kind: kindSel.value, p_scope: scopeSel.value,
         p_scope_value: (scopeSel.value === 'all') ? null : valSel.value,
         p_message: msgIn.value.trim() || null
       }).then(function (r) {
         if (r.error) { toast('提交失败：' + r.error.message); return; }
-        toast('已提交，等 TA 处理'); load();
+        close(); toast('已提交，等 TA 处理'); load();
       });
     }));
-    return card;
+    acts.appendChild(btn('取消', 'btn-ghost', function () { close(); }));
+    sheet.appendChild(acts);
+
+    function close() { if (mask.parentNode) mask.parentNode.removeChild(mask); if (sheet.parentNode) sheet.parentNode.removeChild(sheet); }
+    mask.addEventListener('click', close);
+    document.body.appendChild(mask);
+    document.body.appendChild(sheet);
   }
 
   function askRequest(scope, value) {
