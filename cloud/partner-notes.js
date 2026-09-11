@@ -208,10 +208,16 @@
     more.appendChild(whyIn);
 
     var visSel = el('select', 'input');
-    var visOpts = [['private', '仅自己可见（默认）'], ['requestable', '可申请查看'], ['shared', '直接给 TA 看']];
+    var visOpts = [['requestable', '可申请查看'], ['shared', '直接给 TA 看']];
+    var curVis = note ? note.visibility : 'requestable';
+    var hasCur = false;
     for (var v = 0; v < visOpts.length; v++) {
-      var o = el('option'); o.value = visOpts[v][0]; o.textContent = visOpts[v][1];
-      if ((note ? note.visibility : 'private') === visOpts[v][0]) o.selected = true;
+      if (visOpts[v][0] === curVis) hasCur = true;
+    }
+    if (!hasCur) visOpts.push([curVis, '仅自己可见（旧设置）']);
+    for (var v2 = 0; v2 < visOpts.length; v2++) {
+      var o = el('option'); o.value = visOpts[v2][0]; o.textContent = visOpts[v2][1];
+      if (curVis === visOpts[v2][0]) o.selected = true;
       visSel.appendChild(o);
     }
     more.appendChild(visSel);
