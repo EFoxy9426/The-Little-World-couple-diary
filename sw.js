@@ -1,5 +1,5 @@
 /* 小小世界 PWA Service Worker（网络优先：保证每次部署都能拿到最新代码） */
-var CACHE = 'xx-world-v2';
+var CACHE = 'xx-world-v3';
 var ASSETS = ['/', '/cloud/app.html', '/cloud/index.html', '/styles.css', '/js/store.js', '/js/app.js', '/js/cloud-store.js', '/js/vendor/supabase.js', '/cloud/cloud-store.js', '/cloud/config.js', '/manifest.json', '/icon-192.png', '/icon-512.png'];
 
 self.addEventListener('install', function (e) {
@@ -38,4 +38,9 @@ self.addEventListener('fetch', function (e) {
       });
     })
   );
+});
+
+/* 新版本就绪时，让页面自动重载一次，确保用上最新代码 */
+self.addEventListener('message', function (e) {
+  if (e.data === 'SKIP_WAITING') self.skipWaiting();
 });

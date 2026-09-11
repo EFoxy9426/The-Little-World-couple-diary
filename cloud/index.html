@@ -46,7 +46,16 @@
   <link rel="apple-touch-icon" href="/icon-192.png">
   <script>
     if ('serviceWorker' in navigator && location.protocol === 'https:') {
-      window.addEventListener('load', function () { navigator.serviceWorker.register('/sw.js'); });
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('/sw.js').then(function (reg) {
+          try { reg.update(); } catch (e) {}
+        });
+      });
+      navigator.serviceWorker.addEventListener('controllerchange', function () {
+        if (window.__xxReloaded) return;
+        window.__xxReloaded = true;
+        location.reload();
+      });
     }
   </script>
 </head>
