@@ -269,9 +269,6 @@
       e.appendChild(document.createTextNode('TA 还没有记录与你有关的内容'));
       body.appendChild(e);
     } else {
-      var bar = el('div', 'pn-actions');
-      bar.appendChild(btn('🙋 申请查看更多（整本 / 按分类）', 'btn-ghost', function () { showApplySheet(); }));
-      body.appendChild(bar);
       for (var i = 0; i < data.about_me.length; i++) body.appendChild(aboutCard(data.about_me[i]));
     }
     var m = me(), mine = [];
@@ -301,7 +298,20 @@
     card.appendChild(head);
     if (!n.can_read) {
       card.appendChild(el('p', 'pn-shield', 'TA 记录了一条关于你的细节，暂未公开内容。'));
-      card.appendChild(btn('🙋 申请查看这一条', 'btn-ghost', function () { askRequest('note', n.id); }));
+      var myReq = null;
+      var mm = me();
+      for (var ri = 0; ri < data.requests.length; ri++) {
+        var rq = data.requests[ri];
+        if (mm && String(rq.requester_id) === String(mm.id) && rq.kind === 'access' && rq.scope === 'note' && String(rq.scope_value) === String(n.id)) {
+          if (!myReq || String(rq.created_at) > String(myReq.created_at)) myReq = rq;
+        }
+      }
+      if (myReq && myReq.status === 'pending') {
+        card.appendChild(pill('已申请，等待 TA 处理', 'mini'));
+      } else {
+        if (myReq && myReq.status === 'denied') card.appendChild(pill('TA 暂未同意（可再次申请）', 'mini'));
+        card.appendChild(btn('🙋 申请查看这一条', 'btn-ghost', function () { askRequest('note', n.id); }));
+      }
       return card;
     }
     var open = !!expanded['about_' + n.id];
@@ -330,68 +340,6 @@
       });
     }));
     return card;
-  }
-
-  function showApplySheet() {
-    var mask = el('div', 'pn-sheet-mask');
-    var sheet = el('div', 'pn-sheet');
-    sheet.appendChild(el('div', 'pn-sheet-title', '🙋 申请查看 / 申请删除'));
-    sheet.appendChild(el('p', 'hint', '申请什么、是否同意，都由 TA 决定；被拒绝不影响你们其他功能。'));
-
-    var kindSel = el('select', 'input');
-    var k1 = el('option'); k1.value = 'access'; k1.textContent = '申请查看';
-    var k2 = el('option'); k2.value = 'deletion'; k2.textContent = '请求删除';
-    kindSel.appendChild(k1); kindSel.appendChild(k2);
-    sheet.appendChild(kindSel);
-
-    var scopeSel = el('select', 'input');
-    var s1 = el('option'); s1.value = 'all'; s1.textContent = '整本';
-    var s2 = el('option'); s2.value = 'category'; s2.textContent = '按分类';
-    var s3 = el('option'); s3.value = 'note'; s3.textContent = '单条记录';
-    s3.disabled = (data.about_me.length === 0);
-    scopeSel.appendChild(s1); scopeSel.appendChild(s2); scopeSel.appendChild(s3);
-    sheet.appendChild(scopeSel);
-
-    var valSel = el('select', 'input');
-    valSel.style.display = 'none';
-    sheet.appendChild(valSel);
-
-    var msgIn = el('input', 'input');
-    msgIn.placeholder = '想说的话（可选）';
-    sheet.appendChild(msgIn);
-
-    function fillVal() {
-      clear(valSel);
-      if (scopeSel.value === 'category') {
-        for (var i = 0; i < CATS.length; i++) { var o = el('option'); o.value = CATS[i].v; o.textContent = CATS[i].e + ' ' + CATS[i].v; valSel.appendChild(o); }
-        valSel.style.display = 'block';
-      } else if (scopeSel.value === 'note') {
-        for (var k = 0; k < data.about_me.length; k++) { var n = data.about_me[k]; var on = el('option'); on.value = n.id; on.textContent = n.category; valSel.appendChild(on); }
-        valSel.style.display = 'block';
-      } else {
-        valSel.style.display = 'none';
-      }
-    }
-    scopeSel.addEventListener('change', fillVal); fillVal();
-
-    var acts = el('div', 'pn-actions');
-    acts.appendChild(btn('提交申请', 'btn-primary', function () {
-      sb().rpc('request_partner_note', {
-        p_kind: kindSel.value, p_scope: scopeSel.value,
-        p_scope_value: (scopeSel.value === 'all') ? null : valSel.value,
-        p_message: msgIn.value.trim() || null
-      }).then(function (r) {
-        if (r.error) { toast('提交失败：' + r.error.message); return; }
-        close(); toast('已提交，等 TA 处理'); load();
-      });
-    }));
-    acts.appendChild(btn('取消', 'btn-ghost', function () { close(); }));
-    sheet.appendChild(acts);
-
-    function close() { if (mask.parentNode) mask.parentNode.removeChild(mask); if (sheet.parentNode) sheet.parentNode.removeChild(sheet); }
-    mask.addEventListener('click', close);
-    document.body.appendChild(mask);
-    document.body.appendChild(sheet);
   }
 
   function askRequest(scope, value) {
