@@ -608,25 +608,57 @@
     });
   }
 
+  function checkAnniversaries() {
+    try {
+      var st = window.store && window.store.load ? window.store.load() : null;
+      if (!st || !st.couple) return;
+      var today = window.store.todayStr();
+      var list = [{ key: 'core', name: '在一起的纪念日', date: st.couple.since, repeat: true }];
+      var arr = st.anniversaries || [];
+      for (var i = 0; i < arr.length; i++) {
+        list.push({ key: arr[i].id, name: arr[i].name, date: arr[i].date, repeat: arr[i].repeat });
+      }
+      var marks = [30, 7, 3, 1, 0];
+      for (var k = 0; k < list.length; k++) {
+        var occ = window.store.occurrence(list[k], today);
+        if (!occ) continue;
+        for (var m = 0; m < marks.length; m++) {
+          if (occ.days !== marks[m]) continue;
+          var dk = 'xx_ann_' + list[k].key + '_' + marks[m] + '_' + today;
+          if (localStorage.getItem(dk)) continue;
+          localStorage.setItem(dk, '1');
+          var when = (marks[m] === 0) ? '就是今天' : ('还有 ' + marks[m] + ' 天');
+          notify('📌 ' + list[k].name + ' ' + when, '日期：' + window.store.fmtDot(occ.date), 'both');
+        }
+      }
+    } catch (e) {}
+  }
+
   function init() {
-    var tabs = $('pnSubtabs'); if (!tabs) return;
-    refreshBadge();
-    setInterval(refreshBadge, 20000);
-    var tn = document.getElementById('btnTestNotify');
-    if (tn) tn.addEventListener('click', function () {
-      toast('正在发送测试推送…');
-      notify('小小世界 · 测试推送', '如果你在微信收到这条消息，说明推送配置成功 ✅', 'me', function (res) {
-        if (res && res.ok) toast('测试推送已发送，请查看微信 ✔');
-        else toast('推送失败：' + ((res && (res.error || (res.body && res.body.error))) || ('HTTP ' + ((res && res.status) || '?'))));
-      });
-    });
-    setTimeout(checkAnniversaries, 4000);
-    setInterval(checkAnniversaries, 6 * 3600 * 1000);
+    var tabs = $('pnSubtabs');
+    if (!tabs) return;
+    // 先绑定点击，保证子页签一定可用
     tabs.addEventListener('click', function (e) {
       var b = e.target.closest ? e.target.closest('[data-pn]') : null;
       if (b) switchSub(b.getAttribute('data-pn'));
     });
+    try { refreshBadge(); setInterval(refreshBadge, 20000); } catch (e1) {}
+    try {
+      var tn = document.getElementById('btnTestNotify');
+      if (tn) tn.addEventListener('click', function () {
+        toast('正在发送测试推送…');
+        notify('小小世界 · 测试推送', '如果你在微信收到这条消息，说明推送配置成功 ✅', 'me', function (res) {
+          if (res && res.ok) toast('测试推送已发送，请查看微信 ✔');
+          else toast('推送失败：' + ((res && (res.error || (res.body && res.body.error))) || ('HTTP ' + ((res && res.status) || '?'))));
+        });
+      });
+    } catch (e2) {}
+    try {
+      setTimeout(checkAnniversaries, 4000);
+      setInterval(checkAnniversaries, 6 * 3600 * 1000);
+    } catch (e3) {}
   }
+
   window.addEventListener('focus', function () { if (loaded && !$('pnRoot').classList.contains('hidden')) load(); });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
   window.partnerNotesRefresh = function () { if (loaded) load(); };
