@@ -1124,6 +1124,35 @@
         });
       }
     }
+    var ra = $('roleAssign');
+    if (ra) {
+      ra.textContent = '';
+      if (store.cloud && store.couple && store.me) {
+        try {
+          var roles = store.couple().roles || {};
+          var mine = store.me();
+          var myKey = (String(roles.bro) === String(mine.id)) ? 'bro' : 'sis';
+          var otherKey = (myKey === 'bro') ? 'sis' : 'bro';
+          var myP = partner(myKey);
+          var otherP = partner(otherKey);
+          if (myP && otherP) ra.textContent = '当前身份：' + myP.emoji + ' ' + myP.name + ' = 你；' + otherP.emoji + ' ' + otherP.name + ' = TA。如果不对，点下面交换。';
+        } catch (e) { ra.textContent = ''; }
+      }
+    }
+    var pk = $('pushKeyInput');
+    if (pk) {
+      pk.value = '';
+      if (store.cloud && store.couple && store.me) {
+        try {
+          var cc = store.couple();
+          var rr = (cc.roles) ? cc.roles : {};
+          var mm2 = store.me();
+          var myKey = (String(rr.bro) === String(mm2.id)) ? 'bro' : 'sis';
+          var kk = (cc.pushKeys) ? cc.pushKeys : {};
+          pk.value = kk[myKey] || '';
+        } catch (e) { pk.value = ''; }
+      }
+    }
     var le = $('lastExportLine');
     if (le) {
       var last = store.getLastExport();
@@ -1212,6 +1241,37 @@
       });
     }
 
+
+    var savePushBtn = $('btnSavePushKey');
+    if (savePushBtn) {
+      savePushBtn.addEventListener('click', function () {
+        if (!store.cloud || !store.couple || !store.me) { toast('仅云端版支持'); return; }
+        var cc2 = store.couple();
+        var rr2 = cc2.roles || {};
+        var mm3 = store.me();
+        var myK = (String(rr2.bro) === String(mm3.id)) ? 'bro' : 'sis';
+        if (!cc2.pushKeys) cc2.pushKeys = {};
+        cc2.pushKeys[myK] = $('pushKeyInput').value.trim();
+        if (persist()) toast('已保存你的推送 Key');
+      });
+    }
+    var swapBtn = $('btnSwapRoles');
+    if (swapBtn) {
+      swapBtn.addEventListener('click', function () {
+        if (!store.cloud || !store.couple || !store.me) { toast('仅云端版支持交换身份'); return; }
+        ask('交换大哥 / 小弟？', '交换后，历史记录的署名显示会跟着交换（你说的悄悄话会显示成对方的署名），确定吗？', true).then(function (ok) {
+          if (!ok) return;
+          var c = store.couple();
+          if (!c.roles) return;
+          var t = c.roles.bro; c.roles.bro = c.roles.sis; c.roles.sis = t;
+          var mine = store.me();
+          var newKey = (String(c.roles.bro) === String(mine.id)) ? 'bro' : 'sis';
+          current = newKey;
+          S.couple.bound = { key: newKey, at: store.nowStamp() };
+          if (persist()) { renderAll(); toast('已交换身份'); }
+        });
+      });
+    }
 
     /* PWA 安装到桌面 */
     (function () {

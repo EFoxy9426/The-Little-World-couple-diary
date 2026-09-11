@@ -81,6 +81,16 @@
 
   function normalize(d) {
     if (!d.couple) d.couple = makeDefault().couple;
+    if (!d.couple.roles) {
+      var others = (space.members || []).filter(function (mm) { return String(mm.user_id) !== String(me.id); });
+      var otherId = others.length ? String(others[0].user_id) : null;
+      if (String(space.owner_id) === String(me.id)) {
+        d.couple.roles = { sis: me.id, bro: otherId };
+      } else {
+        d.couple.roles = { sis: String(space.owner_id), bro: me.id };
+      }
+    }
+    me.role = (d.couple.roles && String(d.couple.roles.bro) === String(me.id)) ? 'bro' : 'sis';
     d.couple.bound = { key: me.role, at: (d.couple.bound && d.couple.bound.at) || base.nowStamp() };
     d.couple.partners = d.couple.partners || base.defaultPartners();
     d.memories = d.memories || [];
@@ -94,7 +104,10 @@
     var d = base.blank();
     d.couple.name = space.name || '小小世界';
     d.couple.since = '2025-12-25';
-    d.couple.bound = { key: me.role, at: base.nowStamp() };
+    var others2 = (space.members || []).filter(function (mm2) { return String(mm2.user_id) !== String(me.id); });
+    d.couple.roles = { sis: me.id, bro: others2.length ? String(others2[0].user_id) : null };
+    d.couple.bound = { key: 'sis', at: base.nowStamp() };
+    me.role = 'sis';
     return d;
   }
 
@@ -224,7 +237,7 @@
       state = normalize(JSON.parse(JSON.stringify(raw)));
       for (var i = 0; i < dataCbs.length; i++) dataCbs[i]();
       if (window.xxNotify) {
-        for (var ai = 0; ai < adds.length; ai++) window.xxNotify(adds[ai].title, adds[ai].desp);
+        for (var ai = 0; ai < adds.length; ai++) window.xxNotify(adds[ai].title, adds[ai].desp, 'me');
       }
     } catch (e) { console.warn('远端数据解析失败', e); }
   }

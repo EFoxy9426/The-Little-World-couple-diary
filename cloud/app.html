@@ -283,6 +283,11 @@
               <span class="spacer"></span>
               <button type="button" class="btn btn-primary" id="btnSavePartners">保存我俩</button>
             </div>
+
+            <p class="hint" id="roleAssign"></p>
+            <div class="btn-row">
+              <button type="button" class="btn btn-ghost small" id="btnSwapRoles">🔁 交换大哥 / 小弟</button>
+            </div>
           </div>
 
           <div class="card tilt-card">
@@ -312,12 +317,25 @@
           </div>
 
           <div class="card tilt-card">
+            <h3 class="card-sub">📢 微信推送（Server 酱）</h3>
+            <p class="hint">想要微信提醒：打开 sct.ftqq.com → 微信扫码登录 → 复制你的 SendKey → 填在下面。两人各填各的，就能各自收到属于自己的提醒。</p>
+            <label class="field">
+              <span class="label">我的 SendKey</span>
+              <input type="text" class="input" id="pushKeyInput" placeholder="SCTxxxxxxxx">
+            </label>
+            <div class="btn-row">
+              <button type="button" class="btn btn-primary" id="btnSavePushKey">保存我的 Key</button>
+              <button type="button" class="btn" id="btnTestNotify">📢 测试微信推送</button>
+            </div>
+            <p class="hint">Key 存在你们的共享空间数据里（只有你俩可见）。Server 酱免费版每日有发送条数上限，测试时省着用。</p>
+          </div>
+
+          <div class="card tilt-card">
             <h3 class="card-sub">🗄️ 数据（本机存储，建议定期导出备份）</h3>
             <div class="btn-row">
               <button type="button" class="btn btn-primary" id="btnExport">⬇️ 导出备份</button>
               <button type="button" class="btn" id="btnImport">⬆️ 导入备份</button>
               <input type="file" id="importFile" accept=".json,application/json" hidden>
-              <button type="button" class="btn" id="btnTestNotify">📢 测试微信推送</button>
               <button type="button" class="btn" id="btnSample">✨ 恢复示例数据</button>
               <button type="button" class="btn btn-danger" id="btnWipe">🧹 清空记录</button>
             </div>

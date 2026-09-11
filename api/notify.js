@@ -1,10 +1,10 @@
 /* Vercel Serverless Function：微信推送（Server 酱） */
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') { res.status(405).json({ error: 'method not allowed' }); return; }
-  const key = process.env.SERVERCHAN_KEY;
+  const envKey = process.env.SERVERCHAN_KEY;
   const supaUrl = process.env.SUPABASE_URL;
   const supaKey = process.env.SUPABASE_ANON_KEY;
-  if (!key) { res.status(500).json({ error: 'SERVERCHAN_KEY 未配置' }); return; }
+
 
   const auth = req.headers.authorization || '';
   if (auth.indexOf('Bearer ') !== 0) { res.status(401).json({ error: '未登录' }); return; }
@@ -20,6 +20,8 @@ module.exports = async function handler(req, res) {
   let body = req.body;
   if (typeof body === 'string') { try { body = JSON.parse(body || '{}'); } catch (e) { body = {}; } }
   body = body || {};
+  const key = String(body.key || envKey || '');
+  if (!key) { res.status(500).json({ error: '没有可用的推送 Key（请在小小说世界设置里填写，或在 Vercel 配置 SERVERCHAN_KEY）' }); return; }
   const title = String(body.title || '小小世界').slice(0, 60);
   const desp = String(body.desp || '').slice(0, 800);
 
