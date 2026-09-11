@@ -212,6 +212,8 @@
   cloudStore.onData = function (cb) { dataCbs.push(cb); };
   cloudStore.subscribe = subscribe;
   cloudStore.client = function () { return sb; };
+  cloudStore.couple = function () { return state && state.couple ? state.couple : null; };
+  cloudStore.ownerId = function () { return space ? space.owner_id : null; };
   cloudStore.spaceId = function () { return space ? space.id : null; };
   cloudStore.me = function () { return me; };
   cloudStore.members = function () { return space && space.members ? space.members : []; };
