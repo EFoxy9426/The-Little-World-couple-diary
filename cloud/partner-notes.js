@@ -22,6 +22,8 @@
   var sub = 'my';
   var loaded = false;
   var expanded = {};
+  var lastJson = '';
+  var pollTimer = null;
 
   function $(id) { return document.getElementById(id); }
   function el(tag, cls, text) {
@@ -72,6 +74,9 @@
     c.rpc('partner_notebook_data').then(function (r) {
       if (r.error) { toast('加载失败：' + r.error.message); return; }
       var d = r.data || {};
+      var j = JSON.stringify(d);
+      if (loaded && j === lastJson) { if (cb) cb(); return; }
+      lastJson = j;
       data.my_notes = d.my_notes || [];
       data.about_me = d.about_me || [];
       data.requests = d.requests || [];
@@ -222,14 +227,6 @@
     }
     more.appendChild(visSel);
 
-    var existRow = el('label', 'pn-check');
-    var existBox = el('input'); existBox.type = 'checkbox';
-    existBox.checked = !!(note && note.existence_visible);
-    existRow.appendChild(existBox);
-    existRow.appendChild(el('span', '', '对 TA 显示「有关于你的记录」'));
-    more.appendChild(existRow);
-    function syncExist() { existRow.style.display = (visSel.value === 'requestable') ? 'flex' : 'none'; }
-    visSel.addEventListener('change', syncExist); syncExist();
     sheet.appendChild(more);
 
     var acts = el('div', 'pn-actions');
@@ -242,7 +239,7 @@
         space_id: spaceId(), author_id: me().id, about_user_id: p.user_id,
         category: cat, text: txt, why: whyIn.value.trim() || null,
         visibility: visSel.value,
-        existence_visible: (visSel.value === 'requestable') ? !!existBox.checked : false
+        existence_visible: (visSel.value === 'requestable')
       };
       var c = sb();
       var q = note ? c.from('partner_notes').update(payload).eq('id', note.id) : c.from('partner_notes').insert([payload]);
@@ -438,6 +435,11 @@
   }
 
   /* ---------- 初始化 ---------- */
+  function startPoll() {
+    stopPoll();
+    pollTimer = setInterval(function () { if (!document.hidden && loaded) load(); }, 5000);
+  }
+  function stopPoll() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
   function switchSub(next) {
     var love = $('pnLovePane'), book = $('pnRoot');
     if (!love || !book) return;
@@ -446,7 +448,7 @@
     book.classList.toggle('hidden', !isBook);
     var btns = document.querySelectorAll('#pnSubtabs [data-pn]');
     for (var i = 0; i < btns.length; i++) btns[i].classList.toggle('is-on', btns[i].getAttribute('data-pn') === next);
-    if (isBook && !loaded) load();
+    if (isBook) { load(); startPoll(); } else { stopPoll(); }
   }
   function init() {
     var tabs = $('pnSubtabs'); if (!tabs) return;
@@ -455,6 +457,7 @@
       if (b) switchSub(b.getAttribute('data-pn'));
     });
   }
+  window.addEventListener('focus', function () { if (loaded && !$('pnRoot').classList.contains('hidden')) load(); });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
   window.partnerNotesRefresh = function () { if (loaded) load(); };
 })();
