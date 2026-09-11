@@ -24,6 +24,7 @@
   var expanded = {};
   var lastJson = '';
   var pollTimer = null;
+  var lastIds = [];
 
   function $(id) { return document.getElementById(id); }
   function el(tag, cls, text) {
@@ -510,6 +511,22 @@
     for (var i = 0; i < btns.length; i++) btns[i].classList.toggle('is-on', btns[i].getAttribute('data-pn') === next);
     if (isBook) { load(); startPoll(); } else { stopPoll(); }
   }
+  function seenKey() { return 'xx_pn_seen_' + (window.store && window.store.spaceId ? window.store.spaceId() : 'x'); }
+  function readSeen() { try { return JSON.parse(localStorage.getItem(seenKey()) || '[]'); } catch (e) { return []; } }
+  function writeSeen(arr) { try { localStorage.setItem(seenKey(), JSON.stringify(arr)); } catch (e) {} }
+  function hideBadge() {
+    var tab = document.querySelector('.tab[data-tab="notes"]');
+    if (!tab) return;
+    var b = tab.querySelector('.tab-badge');
+    if (b) { b.textContent = '0'; b.style.display = 'none'; }
+  }
+  function markAllSeen() {
+    var seen = readSeen();
+    for (var i = 0; i < lastIds.length; i++) if (seen.indexOf(lastIds[i]) === -1) seen.push(lastIds[i]);
+    writeSeen(seen);
+    hideBadge();
+  }
+
   function ensureBanner() {
     var bar = $('pnBanner');
     if (bar) return bar;
@@ -521,6 +538,7 @@
     var go = el('button', 'pn-banner-btn', '查看');
     go.type = 'button';
     go.addEventListener('click', function () {
+      markAllSeen();
       var tab = document.querySelector('.tab[data-tab="notes"]');
       if (tab) tab.click();
       sub = 'access';
@@ -529,7 +547,7 @@
     bar.appendChild(go);
     var close = el('button', 'pn-banner-close', '✕');
     close.type = 'button';
-    close.addEventListener('click', function () { bar.classList.add('hidden'); });
+    close.addEventListener('click', function () { markAllSeen(); bar.classList.add('hidden'); });
     bar.appendChild(close);
     var tb = document.querySelector('.tabbar');
     if (tb && tb.parentNode) tb.parentNode.insertBefore(bar, tb.nextSibling);
@@ -543,64 +561,51 @@
       if (r.error || !r.data) return;
       var d = r.data;
       var m = me();
-      var pending = 0, shielded = 0;
       var reqs = d.requests || [];
-      for (var i = 0; i < reqs.length; i++) {
-        if (m && reqs[i].status === 'pending' && String(reqs[i].owner_id) === String(m.id)) pending++;
-      }
       var abouts = d.about_me || [];
+      var pendingIds = [], shieldedIds = [];
+      for (var i = 0; i < reqs.length; i++) {
+        if (m && reqs[i].status === 'pending' && String(reqs[i].owner_id) === String(m.id)) pendingIds.push(String(reqs[i].id));
+      }
       for (var k = 0; k < abouts.length; k++) {
         if (abouts[k].can_read === false) {
           var has = false;
           for (var j = 0; j < reqs.length; j++) {
             if (String(reqs[j].scope_value) === String(abouts[k].id) && reqs[j].status === 'pending') has = true;
           }
-          if (!has) shielded++;
+          if (!has) shieldedIds.push(String(abouts[k].id));
         }
       }
-      var total = pending + shielded;
-      var tab = document.querySelector('.tab[data-tab="notes"]');
-      if (tab) {
-        var badge = tab.querySelector('.tab-badge');
-        if (!badge) { badge = el('span', 'tab-badge'); tab.appendChild(badge); }
-        badge.textContent = String(total);
-        badge.style.display = total > 0 ? '' : 'none';
-      }
+
+      lastIds = pendingIds.concat(shieldedIds);
+
+      // 只对“第一次出现”的条目弹提醒条；关掉后不会再自己冒出来
+      var sk = 'xx_pn_seen_' + (window.store && window.store.spaceId ? window.store.spaceId() : 'x');
+      var seen = [];
+      try { seen = JSON.parse(localStorage.getItem(sk) || '[]'); } catch (e) { seen = []; }
+      var all = pendingIds.concat(shieldedIds);
+      var fresh = [];
+      for (var a = 0; a < all.length; a++) if (seen.indexOf(all[a]) === -1) fresh.push(all[a]);
       var bar = ensureBanner();
       var txt = $('pnBannerText');
-      if (total > 0) {
-        if (txt) txt.textContent = pending > 0 ? ('有 ' + pending + ' 条申请待你处理' + (shielded ? '，另有 ' + shielded + ' 条关于你' : '')) : ('TA 记录了 ' + shielded + ' 条关于你的细节');
+      var tab2 = document.querySelector('.tab[data-tab="notes"]');
+      if (tab2) {
+        var badge2 = tab2.querySelector('.tab-badge');
+        if (!badge2) { badge2 = el('span', 'tab-badge'); tab2.appendChild(badge2); }
+        badge2.textContent = String(fresh.length);
+        badge2.style.display = fresh.length > 0 ? '' : 'none';
+      }
+      if (fresh.length) {
+        if (txt) {
+          txt.textContent = pendingIds.length
+            ? ('有 ' + pendingIds.length + ' 条申请待你处理' + (shieldedIds.length ? '，另有 ' + shieldedIds.length + ' 条关于你' : ''))
+            : ('TA 记录了 ' + shieldedIds.length + ' 条关于你的细节');
+        }
         bar.classList.remove('hidden');
       } else {
         bar.classList.add('hidden');
       }
     });
-  }
-
-  function checkAnniversaries() {
-    try {
-      var st = window.store && window.store.load ? window.store.load() : null;
-      if (!st || !st.couple) return;
-      var today = window.store.todayStr();
-      var list = [{ key: 'core', name: '在一起的纪念日', date: st.couple.since, repeat: true }];
-      var arr = st.anniversaries || [];
-      for (var i = 0; i < arr.length; i++) {
-        list.push({ key: arr[i].id, name: arr[i].name, date: arr[i].date, repeat: arr[i].repeat });
-      }
-      var marks = [30, 7, 3, 1, 0];
-      for (var k = 0; k < list.length; k++) {
-        var occ = window.store.occurrence(list[k], today);
-        if (!occ) continue;
-        for (var m = 0; m < marks.length; m++) {
-          if (occ.days !== marks[m]) continue;
-          var dk = 'xx_ann_' + list[k].key + '_' + marks[m] + '_' + today;
-          if (localStorage.getItem(dk)) continue;
-          localStorage.setItem(dk, '1');
-          var when = (marks[m] === 0) ? '就是今天' : ('还有 ' + marks[m] + ' 天');
-          notify('📌 ' + list[k].name + ' ' + when, '日期：' + window.store.fmtDot(occ.date), 'both');
-        }
-      }
-    } catch (e) {}
   }
 
   function init() {
