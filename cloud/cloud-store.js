@@ -188,13 +188,44 @@
     }
     return o;
   }
+  function diffPartnerAdds(prev, next) {
+    var out = [];
+    var role = me && me.role ? me.role : null;
+    var specs = [
+      { k: 'memories', title: '💗 TA 记录了一条新点滴', pick: function (it) { return (it.text || '').slice(0, 60); } },
+      { k: 'wishes', title: '🎯 TA 许下了一个新愿望', pick: function (it) { return (it.text || '').slice(0, 60); } },
+      { k: 'notes', title: '💌 TA 给你留了一句悄悄话', pick: function (it) { return (it.text || '').slice(0, 60); } }
+    ];
+    var prevIds = {};
+    if (prev) {
+      for (var a = 0; a < specs.length; a++) {
+        var pa = prev[specs[a].k] || [];
+        for (var b = 0; b < pa.length; b++) prevIds[specs[a].k + ':' + pa[b].id] = true;
+      }
+    }
+    for (var i = 0; i < specs.length; i++) {
+      var list = (next && next[specs[i].k]) || [];
+      for (var j = 0; j < list.length; j++) {
+        var it = list[j];
+        if (prevIds[specs[i].k + ':' + it.id]) continue;
+        if (!it.by || (role && it.by === role)) continue;
+        out.push({ title: specs[i].title, desp: specs[i].pick(it) });
+      }
+    }
+    return out.slice(0, 3);
+  }
+
   function applyRemote(raw) {
     if (!raw || typeof raw !== 'object' || !raw.couple) return;
     try {
       var same = JSON.stringify(canonical(raw)) === JSON.stringify(canonical(state || {}));
       if (same) return;
+      var adds = diffPartnerAdds(state, raw);
       state = normalize(JSON.parse(JSON.stringify(raw)));
       for (var i = 0; i < dataCbs.length; i++) dataCbs[i]();
+      if (window.xxNotify) {
+        for (var ai = 0; ai < adds.length; ai++) window.xxNotify(adds[ai].title, adds[ai].desp);
+      }
     } catch (e) { console.warn('远端数据解析失败', e); }
   }
   function subscribe() {

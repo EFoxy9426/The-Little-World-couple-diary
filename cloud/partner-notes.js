@@ -61,6 +61,21 @@
   function catOf(v) { for (var i = 0; i < CATS.length; i++) if (CATS[i].v === v) return CATS[i]; return { v: v, e: '📦' }; }
   function findNote(id) { for (var i = 0; i < data.my_notes.length; i++) if (String(data.my_notes[i].id) === String(id)) return data.my_notes[i]; return null; }
   function expsOf(id) { var out = []; for (var i = 0; i < data.explanations.length; i++) if (String(data.explanations[i].note_id) === String(id)) out.push(data.explanations[i]); return out; }
+  function notify(title, desp) {
+    try {
+      var c = sb(); if (!c) return;
+      c.auth.getSession().then(function (r) {
+        var token = (r && r.data && r.data.session) ? r.data.session.access_token : '';
+        if (!token) return;
+        fetch('/api/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+          body: JSON.stringify({ title: title, desp: desp })
+        }).catch(function () {});
+      });
+    } catch (e) {}
+  }
+  window.xxNotify = notify;
   function pill(text, cls) { return el('span', 'pn-pill ' + (cls || ''), text); }
   function btn(text, cls, fn) { var b = el('button', 'btn small ' + (cls || ''), text); b.type = 'button'; b.addEventListener('click', fn); return b; }
   function scopeText(r) {
@@ -245,7 +260,7 @@
       var q = note ? c.from('partner_notes').update(payload).eq('id', note.id) : c.from('partner_notes').insert([payload]);
       q.then(function (r) {
         if (r.error) { toast('保存失败：' + r.error.message); return; }
-        close(); toast('已保存'); load();
+        close(); toast('已保存'); if (visSel.value === 'requestable') notify('TA 记录了一条关于你的细节', 'TA 在小本本里记了一条和你有关的内容，去「关于我的」看看'); load();
       });
     }));
     acts.appendChild(btn('取消', 'btn-ghost', function () { close(); }));
@@ -333,7 +348,7 @@
       if (!txt || !txt.trim()) return;
       sb().rpc('add_note_explanation', { p_note_id: n.id, p_text: txt.trim() }).then(function (r) {
         if (r.error) { toast('提交失败：' + r.error.message); return; }
-        toast('已提交'); load();
+        toast('已提交'); notify('TA 补充了一条说明', 'TA 对你记录里的一条内容做了补充说明'); load();
       });
     }));
     return card;
@@ -342,7 +357,7 @@
   function askRequest(scope, value) {
     sb().rpc('request_partner_note', { p_kind: 'access', p_scope: scope, p_scope_value: value, p_message: null }).then(function (r) {
       if (r.error) { toast('提交失败：' + r.error.message); return; }
-      toast('已提交申请'); load();
+      toast('已提交申请'); notify('TA 申请查看你的小本本', '有人申请查看你的记录，去「TA 的小本本 → 申请与授权」处理吧'); load();
     });
   }
 
@@ -381,7 +396,7 @@
         if (!window.confirm('撤销后 TA 立刻看不到这条记录，确定吗？')) return;
         sb().rpc('revoke_partner_share', { p_share_id: s.id }).then(function (r) {
           if (r.error) { toast('撤销失败：' + r.error.message); return; }
-          toast('已撤销'); load();
+          toast('已撤销'); notify('一条授权已被撤销', 'TA 撤销了你对小本本某条记录的查看授权'); load();
         });
       }));
       body.appendChild(card);
@@ -430,7 +445,7 @@
       p_note_ids: (ids && ids.length) ? ids : null, p_expires_days: days
     }).then(function (res) {
       if (res.error) { toast('处理失败：' + res.error.message); return; }
-      toast(approve ? '已同意' : '已拒绝'); load();
+      toast(approve ? '已同意' : '已拒绝'); notify('小本本申请已处理', approve ? 'TA 同意了你的申请，去看看吧' : 'TA 暂时没有同意这次申请'); load();
     });
   }
 
@@ -450,8 +465,105 @@
     for (var i = 0; i < btns.length; i++) btns[i].classList.toggle('is-on', btns[i].getAttribute('data-pn') === next);
     if (isBook) { load(); startPoll(); } else { stopPoll(); }
   }
+  function ensureBanner() {
+    var bar = $('pnBanner');
+    if (bar) return bar;
+    bar = el('div', 'pn-banner hidden');
+    bar.id = 'pnBanner';
+    var txt = el('span', 'pn-banner-text', '');
+    txt.id = 'pnBannerText';
+    bar.appendChild(txt);
+    var go = el('button', 'pn-banner-btn', '查看');
+    go.type = 'button';
+    go.addEventListener('click', function () {
+      var tab = document.querySelector('.tab[data-tab="notes"]');
+      if (tab) tab.click();
+      sub = 'access';
+      render();
+    });
+    bar.appendChild(go);
+    var close = el('button', 'pn-banner-close', '✕');
+    close.type = 'button';
+    close.addEventListener('click', function () { bar.classList.add('hidden'); });
+    bar.appendChild(close);
+    var tb = document.querySelector('.tabbar');
+    if (tb && tb.parentNode) tb.parentNode.insertBefore(bar, tb.nextSibling);
+    else document.body.appendChild(bar);
+    return bar;
+  }
+
+  function refreshBadge() {
+    var c = sb(); if (!c) return;
+    c.rpc('partner_notebook_data').then(function (r) {
+      if (r.error || !r.data) return;
+      var d = r.data;
+      var m = me();
+      var pending = 0, shielded = 0;
+      var reqs = d.requests || [];
+      for (var i = 0; i < reqs.length; i++) {
+        if (m && reqs[i].status === 'pending' && String(reqs[i].owner_id) === String(m.id)) pending++;
+      }
+      var abouts = d.about_me || [];
+      for (var k = 0; k < abouts.length; k++) {
+        if (abouts[k].can_read === false) {
+          var has = false;
+          for (var j = 0; j < reqs.length; j++) {
+            if (String(reqs[j].scope_value) === String(abouts[k].id) && reqs[j].status === 'pending') has = true;
+          }
+          if (!has) shielded++;
+        }
+      }
+      var total = pending + shielded;
+      var tab = document.querySelector('.tab[data-tab="notes"]');
+      if (tab) {
+        var badge = tab.querySelector('.tab-badge');
+        if (!badge) { badge = el('span', 'tab-badge'); tab.appendChild(badge); }
+        badge.textContent = String(total);
+        badge.style.display = total > 0 ? '' : 'none';
+      }
+      var bar = ensureBanner();
+      var txt = $('pnBannerText');
+      if (total > 0) {
+        if (txt) txt.textContent = pending > 0 ? ('有 ' + pending + ' 条申请待你处理' + (shielded ? '，另有 ' + shielded + ' 条关于你' : '')) : ('TA 记录了 ' + shielded + ' 条关于你的细节');
+        bar.classList.remove('hidden');
+      } else {
+        bar.classList.add('hidden');
+      }
+    });
+  }
+
+  function checkAnniversaries() {
+    try {
+      var st = window.store && window.store.load ? window.store.load() : null;
+      if (!st || !st.couple) return;
+      var today = window.store.todayStr();
+      var list = [{ key: 'core', name: '在一起的纪念日', date: st.couple.since, repeat: true }];
+      var arr = st.anniversaries || [];
+      for (var i = 0; i < arr.length; i++) {
+        list.push({ key: arr[i].id, name: arr[i].name, date: arr[i].date, repeat: arr[i].repeat });
+      }
+      var marks = [30, 7, 3, 1, 0];
+      for (var k = 0; k < list.length; k++) {
+        var occ = window.store.occurrence(list[k], today);
+        if (!occ) continue;
+        for (var m = 0; m < marks.length; m++) {
+          if (occ.days !== marks[m]) continue;
+          var dk = 'xx_ann_' + list[k].key + '_' + marks[m] + '_' + today;
+          if (localStorage.getItem(dk)) continue;
+          localStorage.setItem(dk, '1');
+          var when = (marks[m] === 0) ? '就是今天' : ('还有 ' + marks[m] + ' 天');
+          notify('📌 ' + list[k].name + ' ' + when, '日期：' + window.store.fmtDot(occ.date));
+        }
+      }
+    } catch (e) {}
+  }
+
   function init() {
     var tabs = $('pnSubtabs'); if (!tabs) return;
+    refreshBadge();
+    setInterval(refreshBadge, 20000);
+    setTimeout(checkAnniversaries, 4000);
+    setInterval(checkAnniversaries, 6 * 3600 * 1000);
     tabs.addEventListener('click', function (e) {
       var b = e.target.closest ? e.target.closest('[data-pn]') : null;
       if (b) switchSub(b.getAttribute('data-pn'));

@@ -692,3 +692,13 @@ select.input{cursor:pointer}
 .pn-sheet{position:fixed;left:0;right:0;bottom:0;z-index:131;max-width:640px;margin:0 auto;max-height:86vh;overflow:auto;background:var(--paper);border-top:2px dashed var(--ink);border-radius:14px 14px 0 0;padding:16px 14px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -4px 0 var(--teal)}
 .pn-sheet-title{font-weight:800;font-size:16px;margin-bottom:8px}
 .pn-sheet .pn-actions .btn{flex:1 1 auto}
+
+
+/* ===== 站内提醒：顶部条 + 导航红点 ===== */
+.pn-banner{display:flex;align-items:center;gap:8px;max-width:1000px;margin:8px auto 0;padding:8px 12px;background:var(--yellow);border:2px dashed var(--ink);border-radius:10px;box-shadow:3px 3px 0 var(--red);font-size:14px}
+.pn-banner.hidden{display:none}
+.pn-banner-text{flex:1}
+.pn-banner-btn{border:2px dashed var(--ink);border-radius:8px;background:var(--paper);padding:3px 10px;font:inherit;font-weight:700;cursor:pointer}
+.pn-banner-close{border:none;background:none;font-size:14px;cursor:pointer;color:var(--muted)}
+.tab{position:relative}
+.tab-badge{position:absolute;top:-4px;right:-2px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:var(--red);color:var(--paper);font-size:11px;line-height:18px;text-align:center;font-weight:700}
