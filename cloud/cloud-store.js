@@ -15,6 +15,7 @@
   var dataCbs = [];
   var chan = null;
   var lastSent = '';
+  var rolesFixed = false;
   var BUCKET = 'couple-photos';
 
   function notifyBoot() { booted = true; for (var i = 0; i < bootCbs.length; i++) bootCbs[i](); bootCbs = []; }
@@ -72,6 +73,7 @@
           var raw = (dr.data && dr.data.data) || null;
           if (raw && typeof raw === 'object' && raw.couple) state = normalize(raw);
           else { state = makeDefault(); persist(); }
+          if (rolesFixed) { try { persist(); } catch (e1) {} }
           notifyBoot();
           subscribe();
         });
@@ -81,14 +83,23 @@
 
   function normalize(d) {
     if (!d.couple) d.couple = makeDefault().couple;
+    var memberIds = [];
+    for (var mi2 = 0; mi2 < (space.members || []).length; mi2++) memberIds.push(String(space.members[mi2].user_id));
     if (!d.couple.roles) {
       var others = (space.members || []).filter(function (mm) { return String(mm.user_id) !== String(me.id); });
       var otherId = others.length ? String(others[0].user_id) : null;
-      if (String(space.owner_id) === String(me.id)) {
-        d.couple.roles = { sis: me.id, bro: otherId };
-      } else {
-        d.couple.roles = { sis: String(space.owner_id), bro: me.id };
-      }
+      d.couple.roles = (String(space.owner_id) === String(me.id))
+        ? { sis: me.id, bro: otherId }
+        : { sis: String(space.owner_id), bro: me.id };
+      rolesFixed = true;
+    } else {
+      var rr = d.couple.roles;
+      if (rr.sis && memberIds.length && memberIds.indexOf(String(rr.sis)) === -1) rr.sis = null;
+      if (rr.bro && memberIds.length && memberIds.indexOf(String(rr.bro)) === -1) rr.bro = null;
+      if (rr.sis && rr.bro && String(rr.sis) === String(rr.bro)) { rr.bro = null; rolesFixed = true; }
+      if (!rr.sis && !rr.bro) { rr.sis = me.id; rolesFixed = true; }
+      else if (!rr.bro && String(rr.sis) !== String(me.id)) { rr.bro = me.id; rolesFixed = true; }
+      else if (!rr.sis && String(rr.bro) !== String(me.id)) { rr.sis = me.id; rolesFixed = true; }
     }
     me.role = (d.couple.roles && String(d.couple.roles.bro) === String(me.id)) ? 'bro' : 'sis';
     d.couple.bound = { key: me.role, at: (d.couple.bound && d.couple.bound.at) || base.nowStamp() };
