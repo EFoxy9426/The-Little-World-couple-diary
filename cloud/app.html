@@ -194,6 +194,11 @@
       </section>
 
       <section class="view" data-view="notes" aria-label="悄悄话">
+        <div class="pn-subtabs" id="pnSubtabs">
+          <button type="button" class="pn-subtab is-on" data-pn="love">💌 写给 TA</button>
+          <button type="button" class="pn-subtab" data-pn="book">📒 TA 的小本本</button>
+        </div>
+        <div id="pnLovePane">
         <div class="card compose tilt-card note-paper">
           <h2 class="card-title"><span class="wavy">写一张小纸条</span></h2>
           <form id="noteForm">
@@ -213,6 +218,8 @@
           <span class="hint" id="noteCount"></span>
         </div>
         <div id="noteList" class="note-list"></div>
+        </div>
+        <div id="pnRoot" class="pn-root hidden"></div>
       </section>
 
       <section class="view" data-view="settings" aria-label="设置">
@@ -364,5 +371,6 @@
   <script src="/cloud/config.js"></script>
   <script src="/cloud/cloud-store.js"></script>
   <script src="/js/app.js"></script>
+  <script src="/cloud/partner-notes.js"></script>
 </body>
 </html>

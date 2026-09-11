@@ -66,7 +66,7 @@
         var myId = String(s.user.id);
         var isOwner = String(sp.owner_id) === myId;
         me = { id: myId, email: s.user.email, role: isOwner ? 'bro' : 'sis' };
-        space = { id: sp.id, name: sp.name || '小小世界', owner_id: sp.owner_id };
+        space = { id: sp.id, name: sp.name || '小小世界', owner_id: sp.owner_id, members: sp.members || [] };
         sb.from('spaces').select('id,data').eq('id', sp.id).maybeSingle().then(function (dr) {
           if (dr.error) { fail('读取空间数据失败：' + dr.error.message, false); return; }
           var raw = (dr.data && dr.data.data) || null;
@@ -211,5 +211,9 @@
   }
   cloudStore.onData = function (cb) { dataCbs.push(cb); };
   cloudStore.subscribe = subscribe;
+  cloudStore.client = function () { return sb; };
+  cloudStore.spaceId = function () { return space ? space.id : null; };
+  cloudStore.me = function () { return me; };
+  cloudStore.members = function () { return space && space.members ? space.members : []; };
   window.store = cloudStore;
 })();
