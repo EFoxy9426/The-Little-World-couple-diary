@@ -364,37 +364,61 @@
   function compressImage(file, cb) {
     var reader = new FileReader();
     reader.onload = function () {
+      var original = reader.result;
       var img = new Image();
       img.onload = function () {
-        var MAX = 1080;
-        var scale = Math.min(1, MAX / Math.max(img.width, img.height));
-        var w = Math.max(1, Math.round(img.width * scale));
-        var h = Math.max(1, Math.round(img.height * scale));
-        var canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        var ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, w, h);
-        cb(canvas.toDataURL('image/jpeg', 0.78));
+        try {
+          var MAX = 1080;
+          var scale = Math.min(1, MAX / Math.max(img.width, img.height));
+          var w = Math.max(1, Math.round(img.width * scale));
+          var h = Math.max(1, Math.round(img.height * scale));
+          var canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          var ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          var out = canvas.toDataURL('image/jpeg', 0.78);
+          if (!out || out.length < 100) throw new Error('压缩结果为空');
+          try { localStorage.removeItem('xx_last_photo_error'); } catch (e0) {}
+          cb(out);
+        } catch (e) {
+          try { localStorage.setItem('xx_last_photo_error', '压缩失败：' + e.message); } catch (e2) {}
+          cb(original || null);
+        }
       };
-      img.onerror = function () { cb(null); };
-      img.src = reader.result;
+      img.onerror = function () {
+        try { localStorage.setItem('xx_last_photo_error', '图片无法解码（可能是 HEIC 等格式）'); } catch (e2) {}
+        cb(null);
+      };
+      img.src = original;
     };
-    reader.onerror = function () { cb(null); };
+    reader.onerror = function () {
+      try { localStorage.setItem('xx_last_photo_error', '读取文件失败'); } catch (e2) {}
+      cb(null);
+    };
     reader.readAsDataURL(file);
   }
 
   function processMemFiles(files) {
-    if (!files || files.length === 0) return;
+    if (!files || files.length === 0) { toast('没有选择到照片，请重试'); return; }
     if (pendingPhotos.length + files.length > 6) { toast('一次最多 6 张照片哦'); return; }
+    var left = files.length, ok = 0, bad = 0;
     files.forEach(function (f) {
-      if (!f.type || f.type.indexOf('image/') !== 0) return;
+      if (!f.type || f.type.indexOf('image/') !== 0) { left--; bad++; return; }
       compressImage(f, function (dataURL) {
-        if (dataURL) { pendingPhotos.push(dataURL); renderPhotoPreview(); }
+        left--;
+        if (dataURL) { pendingPhotos.push(dataURL); renderPhotoPreview(); ok++; }
+        else bad++;
+        if (left <= 0) {
+          if (ok > 0) toast('已添加 ' + ok + ' 张照片，记得点「记下来」保存');
+          else toast('照片处理失败（可能是 HEIC 格式），换一张或先在相册里转成 JPG');
+        }
       });
     });
   }
   function onMemPhotoChange(ev) {
-    processMemFiles(Array.prototype.slice.call(ev.target.files || []));
+    var files = Array.prototype.slice.call(ev.target.files || []);
+    toast('已选择 ' + files.length + ' 个文件，正在处理…');
+    processMemFiles(files);
     ev.target.value = '';
   }
 
