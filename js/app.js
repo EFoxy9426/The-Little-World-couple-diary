@@ -1345,6 +1345,7 @@
     /* 点滴 */
     $('memForm').addEventListener('submit', submitMem);
     $('memPhotoInput').addEventListener('change', onMemPhotoChange);
+    $('memPhotoInput').addEventListener('click', function () { toast('已打开照片选择器…'); });
     var memPhotoBtn = $('memPhotoBtn');
     if (memPhotoBtn) {
       memPhotoBtn.addEventListener('click', function () {
