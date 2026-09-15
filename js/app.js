@@ -1346,6 +1346,11 @@
     $('memForm').addEventListener('submit', submitMem);
     $('memPhotoInput').addEventListener('change', onMemPhotoChange);
     $('memPhotoInput').addEventListener('click', function () { toast('已打开照片选择器…'); });
+    var camInput = $('memCameraInput');
+    if (camInput) {
+      camInput.addEventListener('click', function () { toast('正在打开相机…'); });
+      camInput.addEventListener('change', onMemPhotoChange);
+    }
     var memPhotoBtn = $('memPhotoBtn');
     if (memPhotoBtn) {
       memPhotoBtn.addEventListener('click', function () {
