@@ -43,6 +43,12 @@
     return n;
   }
   function clearNode(node) { while (node.firstChild) node.removeChild(node.firstChild); }
+  function notifyPartner(title, desp) {
+    try {
+      if (window.xxNotify) window.xxNotify(title, desp, 'other');
+    } catch (e) {}
+  }
+  window.xxToast = toast;
   function bindImg(img, src) {
     if (!store.cloud || !store.getPhotoUrl) { img.src = src; return; }
     store.getPhotoUrl(src, function (url) { img.src = url || src; });
@@ -620,8 +626,10 @@
     if (persist()) {
       cancelEditMem();
       renderTimeline();
+      var memText = text;
       $('memText').value = '';
       toast('记下来啦 ❤');
+      notifyPartner('💗 TA 记录了一条新点滴', (memText || '（有照片）').slice(0, 60));
     }
   }
 
@@ -1153,6 +1161,13 @@
         } catch (e) { pk.value = ''; }
       }
     }
+    var pd = $('photoDiag');
+    if (pd) {
+      var lastErr = '';
+      try { lastErr = localStorage.getItem('xx_last_photo_error') || ''; } catch (e) {}
+      pd.textContent = lastErr ? ('⚠️ 上次照片上传失败：' + lastErr) : '照片上传：暂无错误记录';
+      pd.classList.toggle('warn', !!lastErr);
+    }
     var le = $('lastExportLine');
     if (le) {
       var last = store.getLastExport();
@@ -1332,8 +1347,9 @@
         wishDate: date || store.todayStr(), status: 'open',
         photos: [], doneDate: null, gaveupDate: null, by: current
       });
+      var wishText = text;
       $('wishText').value = '';
-      if (persist()) { renderWishes(); toast('愿望许下啦 🎯'); }
+      if (persist()) { renderWishes(); toast('愿望许下啦 🎯'); notifyPartner('🎯 TA 许下了一个新愿望', wishText.slice(0, 60)); }
     });
     var filters = document.querySelectorAll('.chip-filter');
     for (var f = 0; f < filters.length; f++) {
@@ -1349,8 +1365,9 @@
       var text = $('noteText').value.trim();
       if (!text) { toast('写点什么再寄出去吧'); return; }
       S.notes.push({ id: store.genId(), text: text, at: store.nowStamp(), by: current, read: false, replies: [] });
+      var noteText = text;
       $('noteText').value = '';
-      if (persist()) { renderNotes(); toast('纸条寄出去啦 💌'); }
+      if (persist()) { renderNotes(); toast('纸条寄出去啦 💌'); notifyPartner('💌 TA 给你留了一句悄悄话', noteText.slice(0, 60)); }
     });
 
     /* 设置：名字与日子 */

@@ -128,7 +128,13 @@
     return fetch(dataURL).then(function (resp) { return resp.blob(); }).then(function (blob) {
       var p = space.id + '/' + base.genId() + '.jpg';
       return sb.storage.from(BUCKET).upload(p, blob, { contentType: 'image/jpeg', upsert: false }).then(function (r) {
-        if (r.error) throw r.error;
+        if (r.error) {
+          var em = (r.error && r.error.message) ? r.error.message : '未知错误';
+          try { localStorage.setItem('xx_last_photo_error', em); } catch (e2) {}
+          if (window.xxToast) window.xxToast('照片上传失败：' + em);
+          throw r.error;
+        }
+        try { localStorage.removeItem('xx_last_photo_error'); } catch (e3) {}
         map[dataURL] = p;
         saveMap(map);
         return p;
@@ -160,7 +166,11 @@
     }).then(function (r) {
       if (r.error) { console.warn('云端保存失败', r.error); return; }
       lastSent = JSON.stringify(clone);
-    }).catch(function (e) { console.warn('云端保存失败', e); });
+    }).catch(function (e) {
+      console.warn('云端保存失败', e);
+      var m2 = (e && e.message) ? e.message : '未知错误';
+      if (window.xxToast) window.xxToast('云端保存失败：' + m2);
+    });
   }
 
   function getPhotoUrl(src, cb) {
